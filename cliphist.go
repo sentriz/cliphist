@@ -15,6 +15,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+const max = 1000
 const bucketKey = "b"
 
 func main() {
@@ -65,6 +66,12 @@ func store() error {
 		id, _ := b.NextSequence()
 		if err := b.Put(itob(id), input); err != nil {
 			return fmt.Errorf("insert stdin: %w", err)
+		}
+		if b.Sequence() < max {
+			return nil
+		}
+		for k, _ := c.First(); k != nil && btoi(k) <= b.Sequence()-max; k, _ = c.Next() {
+			b.Delete(k)
 		}
 		return nil
 	})
