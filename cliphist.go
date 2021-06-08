@@ -86,9 +86,7 @@ func list() error {
 		b := tx.Bucket([]byte(bucketKey))
 		c := b.Cursor()
 		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			text := v[:min(len(v), 100)]
-			text = bytes.Join(bytes.Fields(bytes.TrimSpace(text)), []byte(" "))
-			fmt.Printf("%d. %s\n", btoi(k), text)
+			fmt.Println(preview(btoi(k), v))
 		}
 		return nil
 	})
@@ -158,6 +156,31 @@ func initDB(opts *bolt.Options) (*bolt.DB, error) {
 		return nil, fmt.Errorf("init bucket: %w", err)
 	}
 	return db, nil
+}
+
+func preview(index uint64, data []byte) string {
+	data = data[:min(len(data), 100)]
+	if mime := mime(data); mime != "" {
+		return fmt.Sprintf("%d. binary data %s", index, mime)
+	}
+	data = bytes.TrimSpace(data)
+	data = bytes.Join(bytes.Fields(data), []byte(" "))
+	return fmt.Sprintf("%d. %s", index, data)
+}
+
+func mime(data []byte) string {
+	switch {
+	case bytes.HasPrefix(data, []byte("\x89PNG\x0D\x0A\x1A\x0A")):
+		return "image/png"
+	case bytes.HasPrefix(data, []byte("\xFF\xD8\xFF")):
+		return "image/jpeg"
+	case bytes.HasPrefix(data, []byte("GIF87a")):
+		return "image/gif"
+	case bytes.HasPrefix(data, []byte("GIF89a")):
+		return "image/gif"
+	default:
+		return ""
+	}
 }
 
 func min(a, b int) int {
