@@ -19,8 +19,8 @@ const max = 1000
 const bucketKey = "b"
 
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatalf("please provide a command <store|list|decode>")
+	if len(os.Args) < 2 {
+		log.Fatalf("please provide a command <store|list|decode|delete>")
 	}
 	switch command := os.Args[1]; command {
 	case "store":
@@ -34,6 +34,13 @@ func main() {
 	case "decode":
 		if err := decode(); err != nil {
 			log.Fatalf("error decoding %v", err)
+		}
+	case "delete":
+		if len(os.Args) != 3 {
+			log.Fatalf("please provide a delete query")
+		}
+		if err := delete([]byte(os.Args[2])); err != nil {
+			log.Fatalf("error deleting %v", err)
 		}
 	default:
 		log.Fatalf("unknown command %q", command)
@@ -137,6 +144,31 @@ func decode() error {
 	})
 	if err != nil {
 		return fmt.Errorf("view db: %w", err)
+	}
+	return nil
+}
+
+func delete(query []byte) error {
+	db, err := initDB(nil)
+	if err != nil {
+		return fmt.Errorf("creating db: %w", err)
+	}
+	defer db.Close()
+	err = db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(bucketKey))
+		c := b.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			if !bytes.Contains(v, query) {
+				continue
+			}
+			if err := b.Delete(k); err != nil {
+				return fmt.Errorf("delete item: %w", err)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("update db: %w", err)
 	}
 	return nil
 }
