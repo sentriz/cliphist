@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -15,7 +14,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-const max = 1000
+const maxItems = 750
 const dedupeSearchMax = 20
 const bucketKey = "b"
 
@@ -26,22 +25,22 @@ func main() {
 	switch command := os.Args[1]; command {
 	case "store":
 		if err := store(); err != nil {
-			log.Fatalf("error storing %v", err)
+			log.Fatalf("error storing: %v", err)
 		}
 	case "list":
 		if err := list(); err != nil {
-			log.Fatalf("error listing %v", err)
+			log.Fatalf("error listing: %v", err)
 		}
 	case "decode":
 		if err := decode(); err != nil {
-			log.Fatalf("error decoding %v", err)
+			log.Fatalf("error decoding: %v", err)
 		}
 	case "delete":
 		if len(os.Args) != 3 {
 			log.Fatalf("please provide a delete query")
 		}
 		if err := delete([]byte(os.Args[2])); err != nil {
-			log.Fatalf("error deleting %v", err)
+			log.Fatalf("error deleting: %v", err)
 		}
 	default:
 		log.Fatalf("unknown command %q", command)
@@ -54,6 +53,7 @@ func store() error {
 		return fmt.Errorf("creating db: %w", err)
 	}
 	defer db.Close()
+
 	input, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
@@ -64,28 +64,66 @@ func store() error {
 	if len(bytes.TrimSpace(input)) == 0 {
 		return nil
 	}
-	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucketKey))
-		c := b.Cursor()
-		for k, v := c.Last(); k != nil && btoi(k) > b.Sequence()-dedupeSearchMax; k, v = c.Prev() {
-			if bytes.Equal(v, input) {
-				_ = b.Delete(k)
-			}
-		}
-		id, _ := b.NextSequence()
-		if err := b.Put(itob(id), input); err != nil {
-			return fmt.Errorf("insert stdin: %w", err)
-		}
-		if b.Sequence() < max {
-			return nil
-		}
-		for k, _ := c.First(); k != nil && btoi(k) <= b.Sequence()-max; k, _ = c.Next() {
-			b.Delete(k)
-		}
-		return nil
-	})
+	tx, err := db.Begin(true)
 	if err != nil {
-		return fmt.Errorf("update db: %w", err)
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	b := tx.Bucket([]byte(bucketKey))
+
+	if err := deduplicate(b, input); err != nil {
+		return fmt.Errorf("deduplicating: %w", err)
+	}
+	id, err := b.NextSequence()
+	if err != nil {
+		return fmt.Errorf("getting next sequence: %w", err)
+	}
+	if err := b.Put(itob(id), input); err != nil {
+		return fmt.Errorf("insert stdin: %w", err)
+	}
+	if err := trimLength(b); err != nil {
+		return fmt.Errorf("trimming length: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+	return nil
+}
+
+// trim the store's size to a number of max items. manually counting
+// seen items because we can't rely on sequence numbers when items can
+// be deleted when deduplicating
+func trimLength(b *bolt.Bucket) error {
+	c := b.Cursor()
+	var seen uint64
+	for k, _ := c.Last(); k != nil; k, _ = c.Prev() {
+		seen++
+		if seen <= maxItems {
+			continue
+		}
+		if err := b.Delete(k); err != nil {
+			return fmt.Errorf("delete :%w", err)
+		}
+	}
+	return nil
+}
+
+func deduplicate(b *bolt.Bucket, input []byte) error {
+	c := b.Cursor()
+	var seen uint64
+	for k, v := c.Last(); k != nil; k, v = c.Prev() {
+		seen++
+		if seen >= dedupeSearchMax {
+			break
+		}
+		if !bytes.Equal(v, input) {
+			continue
+		}
+		if err := b.Delete(k); err != nil {
+			return fmt.Errorf("delete :%w", err)
+		}
 	}
 	return nil
 }
@@ -98,16 +136,17 @@ func list() error {
 		return fmt.Errorf("creating db: %w", err)
 	}
 	defer db.Close()
-	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucketKey))
-		c := b.Cursor()
-		for k, v := c.Last(); k != nil; k, v = c.Prev() {
-			fmt.Println(preview(btoi(k), v))
-		}
-		return nil
-	})
+
+	tx, err := db.Begin(false)
 	if err != nil {
-		return fmt.Errorf("view db: %w", err)
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	b := tx.Bucket([]byte(bucketKey))
+	c := b.Cursor()
+	for k, v := c.Last(); k != nil; k, v = c.Prev() {
+		fmt.Println(preview(btoi(k), v))
 	}
 	return nil
 }
@@ -122,6 +161,7 @@ func decode() error {
 		return fmt.Errorf("creating db: %w", err)
 	}
 	defer db.Close()
+
 	input, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
@@ -138,15 +178,16 @@ func decode() error {
 	if err != nil {
 		return fmt.Errorf("converting id: %w", err)
 	}
-	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucketKey))
-		v := b.Get(itob(uint64(id)))
-		os.Stdout.Write(v)
-		return nil
-	})
+
+	tx, err := db.Begin(false)
 	if err != nil {
-		return fmt.Errorf("view db: %w", err)
+		return fmt.Errorf("begin tx: %w", err)
 	}
+	defer tx.Rollback()
+
+	b := tx.Bucket([]byte(bucketKey))
+	v := b.Get(itob(uint64(id)))
+	os.Stdout.Write(v)
 	return nil
 }
 
@@ -156,21 +197,22 @@ func delete(query []byte) error {
 		return fmt.Errorf("creating db: %w", err)
 	}
 	defer db.Close()
-	err = db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(bucketKey))
-		c := b.Cursor()
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			if !bytes.Contains(v, query) {
-				continue
-			}
-			if err := b.Delete(k); err != nil {
-				return fmt.Errorf("delete item: %w", err)
-			}
-		}
-		return nil
-	})
+	tx, err := db.Begin(true)
 	if err != nil {
-		return fmt.Errorf("update db: %w", err)
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	b := tx.Bucket([]byte(bucketKey))
+	c := b.Cursor()
+	for k, v := c.First(); k != nil; k, v = c.Next() {
+		if bytes.Contains(v, query) {
+			_ = b.Delete(k)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
 	}
 	return nil
 }
@@ -189,11 +231,14 @@ func initDB(opts *bolt.Options) (*bolt.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
+	if db.IsReadOnly() {
+		return db, nil
+	}
 	err = db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte(bucketKey))
 		return err
 	})
-	if err != nil && !errors.Is(err, bolt.ErrDatabaseReadOnly) {
+	if err != nil {
 		return nil, fmt.Errorf("init bucket: %w", err)
 	}
 	return db, nil
