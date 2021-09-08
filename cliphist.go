@@ -16,6 +16,7 @@ import (
 )
 
 const max = 1000
+const dedupeSearchMax = 20
 const bucketKey = "b"
 
 func main() {
@@ -66,9 +67,10 @@ func store() error {
 	err = db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketKey))
 		c := b.Cursor()
-		_, last := c.Last()
-		if bytes.Equal(input, last) {
-			return nil
+		for k, v := c.Last(); k != nil && btoi(k) > b.Sequence()-dedupeSearchMax; k, v = c.Prev() {
+			if bytes.Equal(v, input) {
+				_ = b.Delete(k)
+			}
 		}
 		id, _ := b.NextSequence()
 		if err := b.Put(itob(id), input); err != nil {
