@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.4](https://www.github.com/sentriz/cliphist/compare/v0.1.3...v0.1.4) (2021-09-17)
+
+
+### Bug Fixes
+
+* **ci:** use custom CR_PAT for actions ([daa349e](https://www.github.com/sentriz/cliphist/commit/daa349e43f75bc1efae4a3339c0271768160bdfe))
+
 ### [0.1.3](https://www.github.com/sentriz/cliphist/compare/v0.1.2...v0.1.3) (2021-09-17)
 
 
