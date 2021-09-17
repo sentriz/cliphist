@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.6](https://www.github.com/sentriz/cliphist/compare/v0.1.5...v0.1.6) (2021-09-17)
+
+
+### Bug Fixes
+
+* **ci:** file -> file_glob ([4afc1ac](https://www.github.com/sentriz/cliphist/commit/4afc1acf6f3a30dda43b49d1cfd3692b8709e2d8))
+
 ### [0.1.5](https://www.github.com/sentriz/cliphist/compare/v0.1.4...v0.1.5) (2021-09-17)
 
 
