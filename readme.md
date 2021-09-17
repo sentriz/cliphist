@@ -16,11 +16,14 @@
 - no concept of a picker, only pipes
 
 requires: [go](https://golang.org/),
-[wl-clipboard](https://github.com/bugaevc/wl-clipboard), xdg-utils
+[wl-clipboard](https://github.com/bugaevc/wl-clipboard), xdg-utils (for
+image mime inferance)
 
 ### install
 
-`$ go install go.senan.xyz/cliphist`
+`$ go install go.senan.xyz/cliphist`  
+alternatively, static binaries can be found on the [releases
+page](https://github.com/sentriz/cliphist/releases)
 
 ### usage
 
