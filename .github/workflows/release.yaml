@@ -70,7 +70,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goversion: 1.17
-          release_tag: ${{ steps.release.outputs.tag_name }}
+          release_tag: ${{ needs.release-please.outputs.tag_name }}
           binary_name: cliphist
           goos: linux
           goarch: arm
