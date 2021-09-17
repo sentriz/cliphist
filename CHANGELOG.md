@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.3](https://www.github.com/sentriz/cliphist/compare/v0.1.2...v0.1.3) (2021-09-17)
+
+
+### Bug Fixes
+
+* **ci:** try svenstaro/upload-release-action ([9e59ff3](https://www.github.com/sentriz/cliphist/commit/9e59ff306e7015d089049794b441b3eae7a99ac3))
+
 ### [0.1.2](https://www.github.com/sentriz/cliphist/compare/v0.1.1...v0.1.2) (2021-09-17)
 
 
