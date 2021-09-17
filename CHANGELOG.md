@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.2](https://www.github.com/sentriz/cliphist/compare/v0.1.1...v0.1.2) (2021-09-17)
+
+
+### Bug Fixes
+
+* **ci:** make go binary actions their own workflow ([5101d30](https://www.github.com/sentriz/cliphist/commit/5101d307dd98e63baea47449c640ea34c1ce2014))
+
 ### [0.1.1](https://www.github.com/sentriz/cliphist/compare/v0.1.0...v0.1.1) (2021-09-17)
 
 
