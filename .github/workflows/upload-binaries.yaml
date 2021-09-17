@@ -1,0 +1,34 @@
+name: Upload binaries
+on:
+  push:
+    tags:
+      - "*"
+jobs:
+  build-and-upload:
+    name: Build and upload
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+          - os: linux
+            arch: arm
+          - os: linux
+            arch: 386
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17.x
+      - name: Build binary
+        run: |
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o cliphist-${{ github.ref }}-${{ matrix.os }}-${{ matrix.arch }} .
+      - name: Upload
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.CR_PAT }}
+          file: cliphist-${{ github.ref }}-${{ matrix.os }}-${{ matrix.arch }}
+          tag: ${{ github.ref }}
