@@ -21,7 +21,7 @@ jobs:
           env GOOS=linux GOARCH=386   CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o cliphist-${{ github.ref }}-linux-386   .
       - name: Upload
         uses: svenstaro/upload-release-action@v2
-        wth:
+        with:
           repo_token: ${{ secrets.CR_PAT }}
           file_glob: cliphist*linux
           tag: ${{ github.ref }}
