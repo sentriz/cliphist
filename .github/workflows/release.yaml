@@ -35,7 +35,7 @@ jobs:
         uses: google-github-actions/release-please-action@v2
         id: release
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CR_PAT }}
           release-type: simple
           changelog-path: CHANGELOG.md
           package-name: cliphist
