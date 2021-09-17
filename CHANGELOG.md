@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.7](https://www.github.com/sentriz/cliphist/compare/v0.1.6...v0.1.7) (2021-09-17)
+
+
+### Bug Fixes
+
+* **ci:** build binaries in matrix ([57c180e](https://www.github.com/sentriz/cliphist/commit/57c180e7b4b2d9265a138900c40d6fa40e713a56))
+
 ### [0.1.6](https://www.github.com/sentriz/cliphist/compare/v0.1.5...v0.1.6) (2021-09-17)
 
 
