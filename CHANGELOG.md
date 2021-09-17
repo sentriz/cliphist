@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.1.5](https://www.github.com/sentriz/cliphist/compare/v0.1.4...v0.1.5) (2021-09-17)
+
+
+### Bug Fixes
+
+* **ci:** wth->with ([3373548](https://www.github.com/sentriz/cliphist/commit/3373548edf9aa63a53656ca2fbfbb773be6dd474))
+
 ### [0.1.4](https://www.github.com/sentriz/cliphist/compare/v0.1.3...v0.1.4) (2021-09-17)
 
 
