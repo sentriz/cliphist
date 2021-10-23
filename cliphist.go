@@ -21,7 +21,7 @@ const bucketKey = "b"
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatalf("please provide a command <store|list|decode|delete>")
+		log.Fatalf("please provide a command <store|list|decode|delete|delete-stdin>")
 	}
 	switch command := os.Args[1]; command {
 	case "store":
@@ -41,6 +41,10 @@ func main() {
 			log.Fatalf("please provide a delete query")
 		}
 		if err := delete([]byte(os.Args[2])); err != nil {
+			log.Fatalf("error deleting: %v", err)
+		}
+	case "delete-stdin":
+		if err := deleteStdin(); err != nil {
 			log.Fatalf("error deleting: %v", err)
 		}
 	default:
@@ -210,6 +214,47 @@ func delete(query []byte) error {
 		if bytes.Contains(v, query) {
 			_ = b.Delete(k)
 		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+	return nil
+}
+
+func deleteStdin() error {
+	db, err := initDB(nil)
+	if err != nil {
+		return fmt.Errorf("creating db: %w", err)
+	}
+	defer db.Close()
+
+	input, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return fmt.Errorf("read stdin: %w", err)
+	}
+	if len(input) <= 2 {
+		return fmt.Errorf("input too short to decode")
+	}
+	matches := decodeID.FindSubmatch(input)
+	if len(matches) != 2 {
+		return fmt.Errorf("input not prefixed with id")
+	}
+	idStr := string(matches[1])
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return fmt.Errorf("converting id: %w", err)
+	}
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	b := tx.Bucket([]byte(bucketKey))
+	if err := b.Delete(itob(uint64(id))); err != nil {
+		return fmt.Errorf("delete key: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
