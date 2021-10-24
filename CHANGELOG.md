@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://www.github.com/sentriz/cliphist/compare/v0.1.0...v0.2.0) (2021-10-24)
+
+
+### Features
+
+* add delete-stdin command ([db1ebf1](https://www.github.com/sentriz/cliphist/commit/db1ebf1e937c22d7dfbd51dd17854f9f282840e3)), closes [#18](https://www.github.com/sentriz/cliphist/issues/18)
+
 ## 0.1.0 (2021-09-17)
 
 
