@@ -60,9 +60,6 @@ func store() error {
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
-	if len(input) <= 2 {
-		return nil
-	}
 	if len(bytes.TrimSpace(input)) == 0 {
 		return nil
 	}
