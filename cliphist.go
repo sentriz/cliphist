@@ -21,7 +21,7 @@ const bucketKey = "b"
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatalf("please provide a command <store|list|decode|delete|delete-stdin>")
+		log.Fatalf("please provide a command <store|list|decode|delete|delete-query")
 	}
 	switch command := os.Args[1]; command {
 	case "store":
@@ -37,14 +37,11 @@ func main() {
 			log.Fatalf("error decoding: %v", err)
 		}
 	case "delete":
-		if len(os.Args) != 3 {
-			log.Fatalf("please provide a delete query")
-		}
-		if err := delete([]byte(os.Args[2])); err != nil {
+		if err := delete(); err != nil {
 			log.Fatalf("error deleting: %v", err)
 		}
-	case "delete-stdin":
-		if err := deleteStdin(); err != nil {
+	case "delete-query":
+		if err := deleteQuery(); err != nil {
 			log.Fatalf("error deleting: %v", err)
 		}
 	default:
@@ -196,7 +193,11 @@ func decode() error {
 	return nil
 }
 
-func delete(query []byte) error {
+func deleteQuery() error {
+	if len(os.Args) != 3 {
+		return fmt.Errorf("please provide a <query>")
+	}
+
 	db, err := initDB(nil)
 	if err != nil {
 		return fmt.Errorf("creating db: %w", err)
@@ -211,7 +212,7 @@ func delete(query []byte) error {
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
 	for k, v := c.First(); k != nil; k, v = c.Next() {
-		if bytes.Contains(v, query) {
+		if bytes.Contains(v, []byte(os.Args[2])) {
 			_ = b.Delete(k)
 		}
 	}
@@ -222,7 +223,7 @@ func delete(query []byte) error {
 	return nil
 }
 
-func deleteStdin() error {
+func delete() error {
 	db, err := initDB(nil)
 	if err != nil {
 		return fmt.Errorf("creating db: %w", err)

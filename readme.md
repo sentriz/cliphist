@@ -41,8 +41,10 @@ bind it to something nice on your keyboard
 
 ###### delete old item
 
-`$ cliphist list | dmenu | cliphist delete-stdin`
+`$ cliphist list | dmenu | cliphist delete`  
+or else query manually  
+`$ cliphist delete-query "secret item"`
 
 ###### clear database
 
-`$ rm "$HOME/.cache/cliphist/db"`
+`$ rm "$XDG_CACHE_HOME/cliphist/db"`
