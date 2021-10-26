@@ -38,3 +38,11 @@ call it once per session - for example in your sway config
 
 `$ cliphist list | dmenu | cliphist decode | wl-copy`  
 bind it to something nice on your keyboard
+
+###### delete old item
+
+`$ cliphist list | dmenu | cliphist delete-stdin`
+
+###### clear database
+
+`$ rm "$HOME/.cache/cliphist/db"`
