@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://www.github.com/sentriz/cliphist/compare/v0.2.0...v0.3.0) (2021-10-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* set delete commands to db `delete` / `delete-query`
+
+### Features
+
+* don't ignore small inputs ([7cd236c](https://www.github.com/sentriz/cliphist/commit/7cd236ceeeab83bbd8c26baad230cee60807ded1)), closes [#17](https://www.github.com/sentriz/cliphist/issues/17)
+
+
+### Code Refactoring
+
+* set delete commands to db `delete` / `delete-query` ([4e8c459](https://www.github.com/sentriz/cliphist/commit/4e8c45991456f3e69d7db3c0a5f799129acbaa71))
+
 ## [0.2.0](https://www.github.com/sentriz/cliphist/compare/v0.1.0...v0.2.0) (2021-10-24)
 
 
