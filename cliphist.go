@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"time"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -281,6 +282,7 @@ func initDBOption(ro bool) (*bolt.DB, error) {
 
 	db, err := bolt.Open(dbPath, 0644, &bolt.Options{
 		ReadOnly: ro,
+		Timeout:  1 * time.Second,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
