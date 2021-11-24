@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -50,9 +51,9 @@ func main() {
 }
 
 func store() error {
-	db, err := initDB(nil)
+	db, err := initDB()
 	if err != nil {
-		return fmt.Errorf("creating db: %w", err)
+		return fmt.Errorf("init db: %w", err)
 	}
 	defer db.Close()
 
@@ -128,11 +129,9 @@ func deduplicate(b *bolt.Bucket, input []byte) error {
 }
 
 func list() error {
-	db, err := initDB(&bolt.Options{
-		ReadOnly: true,
-	})
+	db, err := initDBReadOnly()
 	if err != nil {
-		return fmt.Errorf("creating db: %w", err)
+		return fmt.Errorf("init db: %w", err)
 	}
 	defer db.Close()
 
@@ -153,11 +152,9 @@ func list() error {
 var decodeID = regexp.MustCompile(`^(?P<id>\d+)\. `)
 
 func decode() error {
-	db, err := initDB(&bolt.Options{
-		ReadOnly: true,
-	})
+	db, err := initDBReadOnly()
 	if err != nil {
-		return fmt.Errorf("creating db: %w", err)
+		return fmt.Errorf("init db: %w", err)
 	}
 	defer db.Close()
 
@@ -195,9 +192,9 @@ func deleteQuery() error {
 		return fmt.Errorf("please provide a <query>")
 	}
 
-	db, err := initDB(nil)
+	db, err := initDB()
 	if err != nil {
-		return fmt.Errorf("creating db: %w", err)
+		return fmt.Errorf("init db: %w", err)
 	}
 	defer db.Close()
 	tx, err := db.Begin(true)
@@ -221,9 +218,9 @@ func deleteQuery() error {
 }
 
 func delete() error {
-	db, err := initDB(nil)
+	db, err := initDB()
 	if err != nil {
-		return fmt.Errorf("creating db: %w", err)
+		return fmt.Errorf("init db: %w", err)
 	}
 	defer db.Close()
 
@@ -261,7 +258,10 @@ func delete() error {
 	return nil
 }
 
-func initDB(opts *bolt.Options) (*bolt.DB, error) {
+func initDB() (*bolt.DB, error)         { return initDBOption(false) }
+func initDBReadOnly() (*bolt.DB, error) { return initDBOption(true) }
+
+func initDBOption(ro bool) (*bolt.DB, error) {
 	userCacheDir, err := os.UserCacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("get cache dir: %w", err)
@@ -271,7 +271,17 @@ func initDB(opts *bolt.Options) (*bolt.DB, error) {
 		return nil, fmt.Errorf("create cache dir: %w", err)
 	}
 	dbPath := filepath.Join(cacheDir, "db")
-	db, err := bolt.Open(dbPath, 0600, opts)
+
+	// https://github.com/etcd-io/bbolt/issues/98
+	if ro {
+		if _, err := os.Stat(dbPath); errors.Is(err, os.ErrNotExist) {
+			return nil, errors.New("please store something first")
+		}
+	}
+
+	db, err := bolt.Open(dbPath, 0644, &bolt.Options{
+		ReadOnly: ro,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("open db: %w", err)
 	}
