@@ -48,3 +48,8 @@ or else query manually
 ###### clear database
 
 `$ rm "$XDG_CACHE_HOME/cliphist/db"`
+
+
+### packaging
+
+[![](https://repology.org/badge/vertical-allrepos/cliphist.svg)](https://repology.org/project/cliphist/versions)
