@@ -153,14 +153,6 @@ func list() error {
 var decodeID = regexp.MustCompile(`^(?P<id>\d+)\. `)
 
 func decode() error {
-	db, err := initDB(&bolt.Options{
-		ReadOnly: true,
-	})
-	if err != nil {
-		return fmt.Errorf("creating db: %w", err)
-	}
-	defer db.Close()
-
 	input, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
@@ -178,6 +170,14 @@ func decode() error {
 		return fmt.Errorf("converting id: %w", err)
 	}
 
+	db, err := initDB(&bolt.Options{
+		ReadOnly: true,
+	})
+	if err != nil {
+		return fmt.Errorf("creating db: %w", err)
+	}
+	defer db.Close()
+
 	tx, err := db.Begin(false)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -186,6 +186,10 @@ func decode() error {
 
 	b := tx.Bucket([]byte(bucketKey))
 	v := b.Get(itob(uint64(id)))
+
+	// Close before writing to stdout so command it's piped into can lock the db
+	db.Close()
+
 	os.Stdout.Write(v)
 	return nil
 }
@@ -221,12 +225,6 @@ func deleteQuery() error {
 }
 
 func delete() error {
-	db, err := initDB(nil)
-	if err != nil {
-		return fmt.Errorf("creating db: %w", err)
-	}
-	defer db.Close()
-
 	input, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
@@ -243,6 +241,12 @@ func delete() error {
 	if err != nil {
 		return fmt.Errorf("converting id: %w", err)
 	}
+
+	db, err := initDB(nil)
+	if err != nil {
+		return fmt.Errorf("init db: %w", err)
+	}
+	defer db.Close()
 
 	tx, err := db.Begin(true)
 	if err != nil {
