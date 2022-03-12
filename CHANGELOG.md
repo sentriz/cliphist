@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.3.1](https://www.github.com/sentriz/cliphist/compare/v0.3.0...v0.3.1) (2022-03-12)
+
+
+### Bug Fixes
+
+* read write std io before opening db ([4a54efe](https://www.github.com/sentriz/cliphist/commit/4a54efe6fd027e2bef933d3f2d7270badae5d919)), closes [#26](https://www.github.com/sentriz/cliphist/issues/26)
+
 ## [0.3.0](https://www.github.com/sentriz/cliphist/compare/v0.2.0...v0.3.0) (2021-10-26)
 
 
