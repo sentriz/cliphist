@@ -33,15 +33,16 @@ func main() {
 
 var commands = map[string]func(args []string) error{
 	"store": func(_ []string) error {
+		input, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("read stdin: %w", err)
+		}
+
 		db, err := initDB()
 		if err != nil {
 			return fmt.Errorf("opening db: %v", err)
 		}
 		defer db.Close()
-		input, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return fmt.Errorf("read stdin: %w", err)
-		}
 
 		const maxStored = 750
 		const maxDedupe = 20
@@ -64,15 +65,15 @@ var commands = map[string]func(args []string) error{
 	},
 
 	"decode": func(_ []string) error {
+		input, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("read stdin: %w", err)
+		}
 		db, err := initDBReadOnly()
 		if err != nil {
 			return fmt.Errorf("opening db: %w", err)
 		}
 		defer db.Close()
-		input, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return fmt.Errorf("read stdin: %w", err)
-		}
 		if err := decode(db, input, os.Stdout); err != nil {
 			return fmt.Errorf("decoding: %w", err)
 		}
@@ -80,14 +81,14 @@ var commands = map[string]func(args []string) error{
 	},
 
 	"delete-query": func(args []string) error {
+		if len(args) == 0 {
+			return fmt.Errorf("no query provided")
+		}
 		db, err := initDB()
 		if err != nil {
 			return fmt.Errorf("opening db: %w", err)
 		}
 		defer db.Close()
-		if len(args) == 0 {
-			return fmt.Errorf("no query provided")
-		}
 		if err := deleteQuery(db, args[0]); err != nil {
 			return fmt.Errorf("deleting query: %w", err)
 		}
@@ -95,15 +96,15 @@ var commands = map[string]func(args []string) error{
 	},
 
 	"delete": func(args []string) error {
+		input, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return fmt.Errorf("read stdin: %w", err)
+		}
 		db, err := initDB()
 		if err != nil {
 			return fmt.Errorf("opening db: %w", err)
 		}
 		defer db.Close()
-		input, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return fmt.Errorf("read stdin: %w", err)
-		}
 		if err := delete(db, input); err != nil {
 			return fmt.Errorf("deleting query: %w", err)
 		}
