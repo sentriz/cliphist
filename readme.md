@@ -21,7 +21,7 @@ image mime inferance)
 
 ### install
 
-`$ go install go.senan.xyz/cliphist`  
+`$ go install go.senan.xyz/cliphist@latest`  
 alternatively, static binaries can be found on the [releases
 page](https://github.com/sentriz/cliphist/releases)
 
