@@ -6,9 +6,9 @@
 *clipboard history “manager” for wayland*
 
 - write clipboard changes to a history file
-- recall history with dmenu (for example)
-- both text and images are supported
-- clipboard is preserved byte-for-byte
+- recall history with *dmenu* (for example)
+- both *text* and images are supported
+- clipboard is preserved *byte-for-byte*
   - leading / trailing whitespace / no whitespace or newlines are
     preserved
   - won’t break fancy editor selections like vim wordwise, linewise,
