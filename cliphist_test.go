@@ -137,6 +137,31 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+func TestWipe(t *testing.T) {
+	t.Parallel()
+	db := initDBt(t)
+	defer db.Close()
+
+	is := is.New(t)
+
+	const maxStored = 200
+	const maxDedupe = 200
+
+	is.NoErr(store(db, []byte("aa hello 1"), maxDedupe, maxStored))
+	is.NoErr(store(db, []byte("bb hello 2"), maxDedupe, maxStored))
+	is.NoErr(store(db, []byte("aa hello 3"), maxDedupe, maxStored))
+	is.NoErr(store(db, []byte("bb hello 4"), maxDedupe, maxStored))
+	is.NoErr(store(db, []byte("aa hello 5"), maxDedupe, maxStored))
+
+	is.NoErr(wipe(db))
+
+	var buff bytes.Buffer
+	is.NoErr(list(db, &buff))
+
+	items := splitn(buff.Bytes())
+	is.Equal(len(items), 0)
+}
+
 func TestBinary(t *testing.T) {
 	t.Parallel()
 	db := initDBt(t)

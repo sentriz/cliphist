@@ -110,6 +110,18 @@ var commands = map[string]func(args []string) error{
 		}
 		return nil
 	},
+
+	"wipe": func(args []string) error {
+		db, err := initDB()
+		if err != nil {
+			return fmt.Errorf("opening db: %w", err)
+		}
+		defer db.Close()
+		if err := wipe(db); err != nil {
+			return fmt.Errorf("wiping: %w", err)
+		}
+		return nil
+	},
 }
 
 var commandList []string
@@ -290,6 +302,25 @@ func delete(db *bolt.DB, input []byte) error {
 	b := tx.Bucket([]byte(bucketKey))
 	if err := b.Delete(itob(uint64(id))); err != nil {
 		return fmt.Errorf("delete key: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+	return nil
+}
+
+func wipe(db *bolt.DB) error {
+	tx, err := db.Begin(true)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	b := tx.Bucket([]byte(bucketKey))
+	c := b.Cursor()
+	for k, _ := c.First(); k != nil; k, _ = c.Next() {
+		_ = b.Delete(k)
 	}
 
 	if err := tx.Commit(); err != nil {

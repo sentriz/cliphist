@@ -3,7 +3,7 @@
 
 ### cliphist
 
-*clipboard history “manager” for wayland*
+_clipboard history “manager” for wayland_
 
 - write clipboard changes to a history file
 - recall history with **dmenu** / **rofi** / **wofi** (or whatever other picker you like)
@@ -47,8 +47,7 @@ or else query manually
 
 ###### clear database
 
-`$ rm "$XDG_CACHE_HOME/cliphist/db"`
-
+`$ cliphist wipe`
 
 ### packaging
 
