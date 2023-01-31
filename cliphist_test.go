@@ -103,7 +103,7 @@ func TestDeleteQuery(t *testing.T) {
 	items := splitn(buff.Bytes())
 	is.Equal(len(items), 3) // we deleted the bbs
 	for _, item := range items {
-		is.True(bytes.Contains(item, []byte(" aa "))) // item is aa
+		is.True(bytes.Contains(item, []byte("aa"))) // item is aa
 	}
 }
 
@@ -123,7 +123,7 @@ func TestDelete(t *testing.T) {
 	is.NoErr(store(db, []byte("bb hello 4"), maxDedupe, maxStored))
 	is.NoErr(store(db, []byte("aa hello 5"), maxDedupe, maxStored))
 
-	is.NoErr(delete(db, []byte("3. aa hello 3")))
+	is.NoErr(delete(db, []byte("3\taa hello 3")))
 
 	var buff bytes.Buffer
 	is.NoErr(list(db, &buff))
@@ -189,7 +189,7 @@ func TestBinary(t *testing.T) {
 
 	items := splitn(listBuff.Bytes())
 	is.Equal(len(items), 1)                                // we have one image
-	is.Equal(string(items[0]), "1. binary data image/png") // it looks like a png
+	is.Equal(string(items[0]), "1\tbinary data image/png") // it looks like a png
 }
 
 func initDBt(t *testing.T) *bolt.DB {

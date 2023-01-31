@@ -9,7 +9,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -217,20 +216,11 @@ func list(db *bolt.DB, out io.Writer) error {
 	return nil
 }
 
-var (
-	decodeID      = regexp.MustCompile(`^(?P<id>\d+)\. `)
-	decodeIDIndex = decodeID.SubexpIndex("id")
-)
-
 func extractID(input []byte) (uint64, error) {
-	if len(input) <= 2 {
-		return 0, fmt.Errorf("input too short to decode")
-	}
-	matches := decodeID.FindSubmatch(input)
-	if decodeIDIndex >= len(matches) {
+	idStr, _, found := strings.Cut(string(input), "\t")
+	if !found {
 		return 0, fmt.Errorf("input not prefixed with id")
 	}
-	idStr := string(matches[decodeIDIndex])
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
 		return 0, fmt.Errorf("converting id: %w", err)
@@ -280,17 +270,9 @@ func deleteQuery(db *bolt.DB, query string) error {
 }
 
 func delete(db *bolt.DB, input []byte) error {
-	if len(input) <= 2 {
-		return fmt.Errorf("input too short to decode")
-	}
-	matches := decodeID.FindSubmatch(input)
-	if len(matches) != 2 {
-		return fmt.Errorf("input not prefixed with id")
-	}
-	idStr := string(matches[1])
-	id, err := strconv.Atoi(idStr)
+	id, err := extractID(input)
 	if err != nil {
-		return fmt.Errorf("converting id: %w", err)
+		return fmt.Errorf("extract id: %w", err)
 	}
 
 	tx, err := db.Begin(true)
@@ -375,11 +357,11 @@ func initDBOption(ro bool) (*bolt.DB, error) {
 func preview(index uint64, data []byte) string {
 	data = data[:min(len(data), 100)]
 	if mime := mime(data); mime != "" {
-		return fmt.Sprintf("%d. binary data %s", index, mime)
+		return fmt.Sprintf("%d\tbinary data %s", index, mime)
 	}
 	data = bytes.TrimSpace(data)
 	data = bytes.Join(bytes.Fields(data), []byte(" "))
-	return fmt.Sprintf("%d. %s", index, data)
+	return fmt.Sprintf("%d\t%s", index, data)
 }
 
 func mime(data []byte) string {
