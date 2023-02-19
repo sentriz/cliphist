@@ -37,21 +37,21 @@ func TestStoreLimit(t *testing.T) {
 
 	is := is.New(t)
 
-	const maxStored = 10
-	const maxDedupe = 100
+	const maxItems = 10
+	const maxDedupeSearch = 100
 	const toStore = 20
 
 	for i := uint64(0); i < toStore; i++ {
-		is.NoErr(store(db, itob(i+1), maxDedupe, maxStored))
+		is.NoErr(store(db, itob(i+1), maxDedupeSearch, maxItems))
 	}
 
 	var buff bytes.Buffer
 	is.NoErr(list(db, &buff))
 
 	items := splitn(buff.Bytes())
-	is.Equal(len(items), maxStored)                                                // we threw away all but the max
-	is.Equal(string(items[0]), preview(toStore, itob(toStore)))                    // last in first out
-	is.Equal(string(items[len(items)-1]), preview(maxStored+1, itob(maxStored+1))) // last is middle
+	is.Equal(len(items), maxItems)                                               // we threw away all but the max
+	is.Equal(string(items[0]), preview(toStore, itob(toStore)))                  // last in first out
+	is.Equal(string(items[len(items)-1]), preview(maxItems+1, itob(maxItems+1))) // last is middle
 }
 
 func TestDeduplicate(t *testing.T) {
@@ -61,14 +61,14 @@ func TestDeduplicate(t *testing.T) {
 
 	is := is.New(t)
 
-	const maxStored = 200
-	const maxDedupe = 200
+	const maxItems = 200
+	const maxDedupeSearch = 200
 
-	is.NoErr(store(db, []byte("hello"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("multiple"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("multiple"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("multiple"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("hello"), maxDedupe, maxStored))
+	is.NoErr(store(db, []byte("hello"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("multiple"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("multiple"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("multiple"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("hello"), maxDedupeSearch, maxItems))
 
 	var buff bytes.Buffer
 	is.NoErr(list(db, &buff))
@@ -86,14 +86,14 @@ func TestDeleteQuery(t *testing.T) {
 
 	is := is.New(t)
 
-	const maxStored = 200
-	const maxDedupe = 200
+	const maxItems = 200
+	const maxDedupeSearch = 200
 
-	is.NoErr(store(db, []byte("aa hello 1"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("bb hello 2"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("aa hello 3"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("bb hello 4"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("aa hello 5"), maxDedupe, maxStored))
+	is.NoErr(store(db, []byte("aa hello 1"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("bb hello 2"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("aa hello 3"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("bb hello 4"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("aa hello 5"), maxDedupeSearch, maxItems))
 
 	is.NoErr(deleteQuery(db, "bb"))
 
@@ -114,14 +114,14 @@ func TestDelete(t *testing.T) {
 
 	is := is.New(t)
 
-	const maxStored = 200
-	const maxDedupe = 200
+	const maxItems = 200
+	const maxDedupeSearch = 200
 
-	is.NoErr(store(db, []byte("aa hello 1"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("bb hello 2"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("aa hello 3"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("bb hello 4"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("aa hello 5"), maxDedupe, maxStored))
+	is.NoErr(store(db, []byte("aa hello 1"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("bb hello 2"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("aa hello 3"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("bb hello 4"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("aa hello 5"), maxDedupeSearch, maxItems))
 
 	is.NoErr(delete(db, []byte("3\taa hello 3")))
 
@@ -144,14 +144,14 @@ func TestWipe(t *testing.T) {
 
 	is := is.New(t)
 
-	const maxStored = 200
-	const maxDedupe = 200
+	const maxItems = 200
+	const maxDedupeSearch = 200
 
-	is.NoErr(store(db, []byte("aa hello 1"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("bb hello 2"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("aa hello 3"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("bb hello 4"), maxDedupe, maxStored))
-	is.NoErr(store(db, []byte("aa hello 5"), maxDedupe, maxStored))
+	is.NoErr(store(db, []byte("aa hello 1"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("bb hello 2"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("aa hello 3"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("bb hello 4"), maxDedupeSearch, maxItems))
+	is.NoErr(store(db, []byte("aa hello 5"), maxDedupeSearch, maxItems))
 
 	is.NoErr(wipe(db))
 
@@ -169,15 +169,15 @@ func TestBinary(t *testing.T) {
 
 	is := is.New(t)
 
-	const maxStored = 200
-	const maxDedupe = 200
+	const maxItems = 200
+	const maxDedupeSearch = 200
 
 	var inBuff bytes.Buffer
 	is.NoErr(png.Encode(&inBuff, image.NewRGBA(image.Rectangle{
 		Min: image.Point{0, 0},
 		Max: image.Point{20, 20},
 	})))
-	is.NoErr(store(db, inBuff.Bytes(), maxDedupe, maxStored))
+	is.NoErr(store(db, inBuff.Bytes(), maxDedupeSearch, maxItems))
 
 	var outBuff bytes.Buffer
 	is.NoErr(decode(db, []byte(preview(1, []byte(nil))), &outBuff))

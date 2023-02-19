@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -16,17 +16,32 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+var (
+	maxItems        = flag.Uint64("max-items", 750, "maximum number of items to store")
+	maxDedupeSearch = flag.Uint64("max-dedupe-search", 20, "maximum number of last items to look through when finding duplicates")
+)
+
 func main() {
-	usage := fmt.Sprintf("usage: $ %s <%s>", os.Args[0], strings.Join(commandList, "|"))
-	if len(os.Args) < 2 {
-		log.Fatalln(usage)
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "usage:\n")
+		fmt.Fprintf(os.Stderr, "  %s <%s>\n", os.Args[0], strings.Join(commandList, "|"))
+		fmt.Fprintf(os.Stderr, "options:\n")
+		flag.PrintDefaults()
 	}
-	cmd, ok := commands[os.Args[1]]
+	flag.Parse()
+
+	if len(flag.Args()) == 0 {
+		flag.Usage()
+		os.Exit(1)
+	}
+	cmd, ok := commands[flag.Args()[0]]
 	if !ok {
-		log.Fatalln(usage)
+		flag.Usage()
+		os.Exit(1)
 	}
-	if err := cmd(os.Args[2:]); err != nil {
-		log.Fatalf("error in %q: %v", os.Args[1], err)
+	if err := cmd(flag.Args()[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "error in %q: %v", flag.Args()[1], err)
+		os.Exit(1)
 	}
 }
 
@@ -43,9 +58,7 @@ var commands = map[string]func(args []string) error{
 		}
 		defer db.Close()
 
-		const maxStored = 750
-		const maxDedupe = 20
-		if err := store(db, input, maxDedupe, maxStored); err != nil {
+		if err := store(db, input, *maxDedupeSearch, *maxItems); err != nil {
 			return fmt.Errorf("storing: %w", err)
 		}
 		return nil
@@ -110,7 +123,7 @@ var commands = map[string]func(args []string) error{
 		return nil
 	},
 
-	"wipe": func(args []string) error {
+	"wipe": func(_ []string) error {
 		db, err := initDB()
 		if err != nil {
 			return fmt.Errorf("opening db: %w", err)
@@ -131,7 +144,7 @@ func init() {
 	}
 }
 
-func store(db *bolt.DB, input []byte, maxDedupe, maxStored uint64) error {
+func store(db *bolt.DB, input []byte, maxDedupeSearch, maxItems uint64) error {
 	if len(bytes.TrimSpace(input)) == 0 {
 		return nil
 	}
@@ -143,7 +156,7 @@ func store(db *bolt.DB, input []byte, maxDedupe, maxStored uint64) error {
 
 	b := tx.Bucket([]byte(bucketKey))
 
-	if err := deduplicate(b, input, maxDedupe); err != nil {
+	if err := deduplicate(b, input, maxDedupeSearch); err != nil {
 		return fmt.Errorf("deduplicating: %w", err)
 	}
 	id, err := b.NextSequence()
@@ -153,7 +166,7 @@ func store(db *bolt.DB, input []byte, maxDedupe, maxStored uint64) error {
 	if err := b.Put(itob(id), input); err != nil {
 		return fmt.Errorf("insert stdin: %w", err)
 	}
-	if err := trimLength(b, maxStored); err != nil {
+	if err := trimLength(b, maxItems); err != nil {
 		return fmt.Errorf("trimming length: %w", err)
 	}
 
@@ -166,11 +179,11 @@ func store(db *bolt.DB, input []byte, maxDedupe, maxStored uint64) error {
 // trim the store's size to a number of max items. manually counting
 // seen items because we can't rely on sequence numbers when items can
 // be deleted when deduplicating
-func trimLength(b *bolt.Bucket, maxStored uint64) error {
+func trimLength(b *bolt.Bucket, maxItems uint64) error {
 	c := b.Cursor()
 	var seen uint64
 	for k, _ := c.Last(); k != nil; k, _ = c.Prev() {
-		if seen < maxStored {
+		if seen < maxItems {
 			seen++
 			continue
 		}
@@ -182,11 +195,11 @@ func trimLength(b *bolt.Bucket, maxStored uint64) error {
 	return nil
 }
 
-func deduplicate(b *bolt.Bucket, input []byte, maxDedupe uint64) error {
+func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 	c := b.Cursor()
 	var seen uint64
 	for k, v := c.Last(); k != nil; k, v = c.Prev() {
-		if seen > maxDedupe {
+		if seen > maxDedupeSearch {
 			break
 		}
 		if !bytes.Equal(v, input) {
