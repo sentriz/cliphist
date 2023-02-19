@@ -16,12 +16,29 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+var maxStored uint64
+
 func main() {
 	usage := fmt.Sprintf("usage: $ %s <%s>", os.Args[0], strings.Join(commandList, "|"))
 	if len(os.Args) < 2 {
 		log.Fatalln(usage)
 	}
 	cmd, ok := commands[os.Args[1]]
+
+	for i := 0 ; i < len(os.Args); i+=1 {
+		if strings.Contains(os.Args[i], "--max-len") {
+		if i + 1 == len(os.Args) {
+			log.Fatalln(usage, "--max-len $LENGTH")
+			break
+		}
+			var err error
+			if maxStored, err = strconv.ParseUint(os.Args[i+1], 10, 64); err != nil {
+				log.Fatalf("error in %q: %v", os.Args[1], err)
+			}
+			break
+		}
+	}
+
 	if !ok {
 		log.Fatalln(usage)
 	}
@@ -43,7 +60,9 @@ var commands = map[string]func(args []string) error{
 		}
 		defer db.Close()
 
-		const maxStored = 750
+		if maxStored == 0 {
+			maxStored = 750
+		}
 		const maxDedupe = 20
 		if err := store(db, input, maxDedupe, maxStored); err != nil {
 			return fmt.Errorf("storing: %w", err)
