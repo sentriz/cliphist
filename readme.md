@@ -32,7 +32,7 @@ page](https://github.com/sentriz/cliphist/releases)
 `$ wl-paste --watch cliphist store`  
 this will listen for changes on your primary keyboard and write it to
 the history.  
-call it once per session - for example in your sway config
+call it once per session - for example in your sway config  
 or else with a maximum history length of 100 (defaults to 750)
 `$ wl-paste --watch cliphist store --max-len 100`  
 
