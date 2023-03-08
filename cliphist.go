@@ -40,7 +40,7 @@ func main() {
 		os.Exit(1)
 	}
 	if err := cmd(flag.Args()[1:]); err != nil {
-		fmt.Fprintf(os.Stderr, "error in %q: %v", flag.Args()[1], err)
+		fmt.Fprintf(os.Stderr, "error in %q: %v", flag.Args()[0], err)
 		os.Exit(1)
 	}
 }
