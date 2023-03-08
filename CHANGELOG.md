@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.0](https://www.github.com/sentriz/cliphist/compare/v0.3.1...v0.4.0) (2023-03-08)
+
+
+### Features
+
+* add -max-items and -max-dedupe-search command line args ([df85b70](https://www.github.com/sentriz/cliphist/commit/df85b70a9033cb400ca8758192eb901f21718f04)), closes [#35](https://www.github.com/sentriz/cliphist/issues/35)
+* add "wipe" command ([c2e08d9](https://www.github.com/sentriz/cliphist/commit/c2e08d998c0724da37d179c8aa2356913241c35b))
+* use tab as the id separator ([bf792ca](https://www.github.com/sentriz/cliphist/commit/bf792cab257db65be5d1287723353d380e9ecccc))
+
 ### [0.3.1](https://www.github.com/sentriz/cliphist/compare/v0.3.0...v0.3.1) (2022-03-12)
 
 
