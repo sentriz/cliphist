@@ -1,0 +1,23 @@
+stdin in-1
+exec cliphist store
+stdin in-2
+exec cliphist store
+stdin in-3
+exec cliphist store
+
+exec cliphist list
+cmp stdout out
+
+-- in-1 --
+test input 1
+
+-- in-2 --
+test input 2
+
+-- in-3 --
+test input 3
+
+-- out --
+3	test input 3
+2	test input 2
+1	test input 1

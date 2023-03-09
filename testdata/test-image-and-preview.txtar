@@ -1,0 +1,19 @@
+exec png
+cp stdout in.png
+
+stdin stdout
+exec cliphist store
+
+# check we render preview
+exec cliphist list
+stdout 'binary data image/png$'
+
+stdin query
+exec cliphist decode
+cp stdout out.png
+
+# check we didn't lose any bytes
+cmp in.png out.png
+
+-- query --
+1	

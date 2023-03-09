@@ -1,0 +1,19 @@
+exec rand 16
+stdin stdout
+exec cliphist store
+
+exec rand 16
+stdin stdout
+exec cliphist store
+
+exec rand 16
+stdin stdout
+exec cliphist store
+
+exec cliphist wipe
+stdout '^$'
+
+exec cliphist list
+stdin stdout
+exec wc
+stdout '^0$'

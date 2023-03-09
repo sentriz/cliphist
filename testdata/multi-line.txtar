@@ -1,0 +1,14 @@
+exec rand 2048
+cp stdout data-in
+
+stdin data-in
+exec cliphist store
+
+stdin query
+exec cliphist decode
+cp stdout data-out
+
+cmp data-in data-out
+
+-- query --
+1	x

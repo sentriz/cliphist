@@ -1,0 +1,24 @@
+stdin in-a
+exec cliphist store
+
+stdin in-b
+exec cliphist store
+
+stdin in-a
+exec cliphist store
+
+stdin in-b
+exec cliphist store
+
+exec cliphist list
+cmp stdout out
+
+-- in-a --
+my test input
+
+-- in-b --
+my other test input
+
+-- out --
+4	my other test input
+3	my test input

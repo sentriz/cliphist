@@ -16,135 +16,60 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
-var (
-	maxItems        = flag.Uint64("max-items", 750, "maximum number of items to store")
-	maxDedupeSearch = flag.Uint64("max-dedupe-search", 20, "maximum number of last items to look through when finding duplicates")
-)
-
-func main() {
+// allow us to test main
+func main() { os.Exit(main_()) }
+func main_() int {
+	flag := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage:\n")
-		fmt.Fprintf(os.Stderr, "  %s <%s>\n", os.Args[0], strings.Join(commandList, "|"))
+		fmt.Fprintf(os.Stderr, "  %s <store|list|decode|decode-query|delete|wipe>\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "options:\n")
 		flag.PrintDefaults()
 	}
-	flag.Parse()
 
-	if len(flag.Args()) == 0 {
+	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
+	maxDedupeSearch := flag.Uint64("max-dedupe-search", 20, "maximum number of last items to look through when finding duplicates")
+	if err := flag.Parse(os.Args[1:]); err != nil {
+		return 1
+	}
+
+	var err error
+	switch flag.Arg(0) {
+	case "store":
+		err = store(os.Stdin, *maxDedupeSearch, *maxItems)
+	case "list":
+		err = list(os.Stdout)
+	case "decode":
+		err = decode(os.Stdin, os.Stdout)
+	case "delete-query":
+		err = deleteQuery(flag.Arg(1))
+	case "delete":
+		err = delete(os.Stdin)
+	case "wipe":
+		err = wipe()
+	default:
 		flag.Usage()
-		os.Exit(1)
+		return 1
 	}
-	cmd, ok := commands[flag.Args()[0]]
-	if !ok {
-		flag.Usage()
-		os.Exit(1)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
 	}
-	if err := cmd(flag.Args()[1:]); err != nil {
-		fmt.Fprintf(os.Stderr, "error in %q: %v", flag.Args()[0], err)
-		os.Exit(1)
-	}
+	return 0
 }
 
-var commands = map[string]func(args []string) error{
-	"store": func(_ []string) error {
-		input, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return fmt.Errorf("read stdin: %w", err)
-		}
-
-		db, err := initDB()
-		if err != nil {
-			return fmt.Errorf("opening db: %v", err)
-		}
-		defer db.Close()
-
-		if err := store(db, input, *maxDedupeSearch, *maxItems); err != nil {
-			return fmt.Errorf("storing: %w", err)
-		}
-		return nil
-	},
-
-	"list": func(_ []string) error {
-		db, err := initDBReadOnly()
-		if err != nil {
-			return fmt.Errorf("opening db: %w", err)
-		}
-		defer db.Close()
-		if err := list(db, os.Stdout); err != nil {
-			return fmt.Errorf("listing: %w", err)
-		}
-		return nil
-	},
-
-	"decode": func(_ []string) error {
-		input, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return fmt.Errorf("read stdin: %w", err)
-		}
-		db, err := initDBReadOnly()
-		if err != nil {
-			return fmt.Errorf("opening db: %w", err)
-		}
-		defer db.Close()
-		if err := decode(db, input, os.Stdout); err != nil {
-			return fmt.Errorf("decoding: %w", err)
-		}
-		return nil
-	},
-
-	"delete-query": func(args []string) error {
-		if len(args) == 0 {
-			return fmt.Errorf("no query provided")
-		}
-		db, err := initDB()
-		if err != nil {
-			return fmt.Errorf("opening db: %w", err)
-		}
-		defer db.Close()
-		if err := deleteQuery(db, args[0]); err != nil {
-			return fmt.Errorf("deleting query: %w", err)
-		}
-		return nil
-	},
-
-	"delete": func(args []string) error {
-		input, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return fmt.Errorf("read stdin: %w", err)
-		}
-		db, err := initDB()
-		if err != nil {
-			return fmt.Errorf("opening db: %w", err)
-		}
-		defer db.Close()
-		if err := delete(db, input); err != nil {
-			return fmt.Errorf("deleting query: %w", err)
-		}
-		return nil
-	},
-
-	"wipe": func(_ []string) error {
-		db, err := initDB()
-		if err != nil {
-			return fmt.Errorf("opening db: %w", err)
-		}
-		defer db.Close()
-		if err := wipe(db); err != nil {
-			return fmt.Errorf("wiping: %w", err)
-		}
-		return nil
-	},
-}
-
-var commandList []string
-
-func init() {
-	for command := range commands {
-		commandList = append(commandList, command)
+func store(in io.Reader, maxDedupeSearch, maxItems uint64) error {
+	input, err := io.ReadAll(in)
+	if err != nil {
+		return fmt.Errorf("read stdin: %w", err)
 	}
-}
 
-func store(db *bolt.DB, input []byte, maxDedupeSearch, maxItems uint64) error {
+	db, err := initDB()
+	if err != nil {
+		return fmt.Errorf("opening db: %v", err)
+	}
+	defer db.Close()
+
 	if len(bytes.TrimSpace(input)) == 0 {
 		return nil
 	}
@@ -214,7 +139,13 @@ func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 	return nil
 }
 
-func list(db *bolt.DB, out io.Writer) error {
+func list(out io.Writer) error {
+	db, err := initDBReadOnly()
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
 	tx, err := db.Begin(false)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -241,7 +172,17 @@ func extractID(input []byte) (uint64, error) {
 	return uint64(id), nil
 }
 
-func decode(db *bolt.DB, input []byte, out io.Writer) error {
+func decode(in io.Reader, out io.Writer) error {
+	input, err := io.ReadAll(in)
+	if err != nil {
+		return fmt.Errorf("read stdin: %w", err)
+	}
+	db, err := initDBReadOnly()
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
 	id, err := extractID(input)
 	if err != nil {
 		return fmt.Errorf("extracting id: %w", err)
@@ -261,7 +202,17 @@ func decode(db *bolt.DB, input []byte, out io.Writer) error {
 	return nil
 }
 
-func deleteQuery(db *bolt.DB, query string) error {
+func deleteQuery(query string) error {
+	if query == "" {
+		return fmt.Errorf("please provide a query")
+	}
+
+	db, err := initDB()
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
 	tx, err := db.Begin(true)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
@@ -282,7 +233,17 @@ func deleteQuery(db *bolt.DB, query string) error {
 	return nil
 }
 
-func delete(db *bolt.DB, input []byte) error {
+func delete(in io.Reader) error {
+	input, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return fmt.Errorf("read stdin: %w", err)
+	}
+	db, err := initDB()
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
 	id, err := extractID(input)
 	if err != nil {
 		return fmt.Errorf("extract id: %w", err)
@@ -305,7 +266,13 @@ func delete(db *bolt.DB, input []byte) error {
 	return nil
 }
 
-func wipe(db *bolt.DB) error {
+func wipe() error {
+	db, err := initDB()
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
 	tx, err := db.Begin(true)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)

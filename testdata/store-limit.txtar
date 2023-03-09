@@ -1,0 +1,16 @@
+exec rand 16
+stdin stdout
+exec cliphist -max-items 2 store
+
+exec rand 16
+stdin stdout
+exec cliphist -max-items 2 store
+
+exec rand 16
+stdin stdout
+exec cliphist -max-items 2 store
+
+exec cliphist list
+! stdout '^1\t'
+stdout '^2\t'
+stdout '^3\t'
