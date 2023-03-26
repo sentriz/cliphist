@@ -11,9 +11,7 @@ stdin stdout
 exec cliphist store
 
 exec cliphist wipe
-stdout '^$'
+! stdout .
 
 exec cliphist list
-stdin stdout
-exec wc
-stdout '^0$'
+! stdout .

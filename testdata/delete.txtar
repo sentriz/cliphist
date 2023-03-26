@@ -16,10 +16,6 @@ exec cliphist delete-query 'i dont exist'
 exec cliphist list
 cmp stdout out
 
-stdin stdout
-exec wc 
-stdout '^1$'
-
 -- in-good --
 im a test
 

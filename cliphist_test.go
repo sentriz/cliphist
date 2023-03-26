@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"crypto/rand"
 	"fmt"
 	"image"
@@ -20,13 +19,6 @@ func TestMain(m *testing.M) {
 		"rand": func() int {
 			size, _ := strconv.Atoi(os.Args[1])
 			_, _ = io.CopyN(os.Stdout, rand.Reader, int64(size))
-			return 0
-		},
-		"wc": func() int {
-			var n int
-			for r := bufio.NewScanner(os.Stdin); r.Scan(); n++ {
-			}
-			fmt.Println(n)
 			return 0
 		},
 		"png": func() int {
