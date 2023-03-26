@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"image/png"
 	"io"
 	"os"
@@ -26,6 +27,13 @@ func TestMain(m *testing.M) {
 				Min: image.Point{0, 0},
 				Max: image.Point{20, 20},
 			}))
+			return 0
+		},
+		"jpg": func() int {
+			_ = jpeg.Encode(os.Stdout, image.NewRGBA(image.Rectangle{
+				Min: image.Point{0, 0},
+				Max: image.Point{20, 20},
+			}), nil)
 			return 0
 		},
 	})
