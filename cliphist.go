@@ -29,6 +29,7 @@ func main_() int {
 
 	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 20, "maximum number of last items to look through when finding duplicates")
+
 	if err := flag.Parse(os.Args[1:]); err != nil {
 		return 1
 	}

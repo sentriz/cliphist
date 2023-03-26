@@ -8,6 +8,11 @@ exec cliphist hello
 stderr '^usage:'
 stderr '^options:'
 
+exec cliphist -unknown
+! stdout .
+stderr '^usage:'
+stderr '^options:'
+
 # should store first
 exec cliphist list
 stderr 'please store something first'
