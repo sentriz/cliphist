@@ -1,38 +1,38 @@
-exec cliphist
+! exec cliphist
 ! stdout .
 stderr '^usage:'
 stderr '^options:'
 
-exec cliphist hello
+! exec cliphist hello
 ! stdout .
 stderr '^usage:'
 stderr '^options:'
 
-exec cliphist -unknown
+! exec cliphist -unknown
 ! stdout .
 stderr '^usage:'
 stderr '^options:'
 
 # should store first
-exec cliphist list
+! exec cliphist list
 stderr 'please store something first'
 
 exec rand 16
 exec cliphist store
 
 # delete query
-exec cliphist delete-query
+! exec cliphist delete-query
 ! stdout .
 stderr 'please provide a query'
 
 # decode id check
-exec cliphist decode
+! exec cliphist decode
 ! stdout .
 stderr 'input not prefixed with id'
 
 # invalid id
 stdin in-invalid-id
-exec cliphist decode
+! exec cliphist decode
 ! stdout .
 stderr 'parsing "a": invalid syntax'
 

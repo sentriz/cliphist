@@ -1,0 +1,8 @@
+chmod 111 $HOME
+chmod 111 $XDG_CACHE_HOME
+
+exec rand 8
+stdin stdout
+! exec cliphist store
+! stdout .
+stderr 'permission denied'

@@ -15,7 +15,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	testscript.RunMain(m, map[string]func() int{
+	os.Exit(testscript.RunMain(m, map[string]func() int{
 		"cliphist": main_,
 		"rand": func() int {
 			size, _ := strconv.Atoi(os.Args[1])
@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 			}), nil)
 			return 0
 		},
-	})
+	}))
 }
 
 func TestScripts(t *testing.T) {

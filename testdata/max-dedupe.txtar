@@ -1,0 +1,28 @@
+stdin in
+exec cliphist store
+
+exec rand 8
+stdin stdout
+exec cliphist store
+
+stdin in
+exec cliphist store
+
+exec cliphist list
+stdout -count=2 '^.'
+
+exec rand 8
+stdin stdout
+exec cliphist store
+
+exec cliphist list
+stdout -count=3 '^.'
+
+stdin in
+exec cliphist -max-dedupe-search=0 store
+
+exec cliphist list
+stdout -count=4 '^.'
+
+-- in --
+test line
