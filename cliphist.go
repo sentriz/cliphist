@@ -13,29 +13,37 @@ import (
 	"strings"
 	"time"
 
+	_ "embed"
+
 	bolt "go.etcd.io/bbolt"
 )
+
+//go:embed version.txt
+var version string
 
 // allow us to test main
 func main() { os.Exit(main_()) }
 func main_() int {
-	flag := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	flag.Usage = func() {
+	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
+	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage:\n")
-		fmt.Fprintf(os.Stderr, "  %s <store|list|decode|decode-query|delete|wipe>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  $ %s <store|list|decode|decode-query|delete|wipe|version>\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "options:\n")
-		flag.PrintDefaults()
+		flags.VisitAll(func(f *flag.Flag) {
+			fmt.Fprintf(os.Stderr, "  -%s (default %s)\n", f.Name, f.DefValue)
+			fmt.Fprintf(os.Stderr, "    %s\n", f.Usage)
+		})
 	}
 
-	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
-	maxDedupeSearch := flag.Uint64("max-dedupe-search", 20, "maximum number of last items to look through when finding duplicates")
+	maxItems := flags.Uint64("max-items", 750, "maximum number of items to store")
+	maxDedupeSearch := flags.Uint64("max-dedupe-search", 20, "maximum number of last items to look through when finding duplicates")
 
-	if err := flag.Parse(os.Args[1:]); err != nil {
+	if err := flags.Parse(os.Args[1:]); err != nil {
 		return 1
 	}
 
 	var err error
-	switch flag.Arg(0) {
+	switch flags.Arg(0) {
 	case "store":
 		err = store(os.Stdin, *maxDedupeSearch, *maxItems)
 	case "list":
@@ -43,13 +51,15 @@ func main_() int {
 	case "decode":
 		err = decode(os.Stdin, os.Stdout)
 	case "delete-query":
-		err = deleteQuery(flag.Arg(1))
+		err = deleteQuery(flags.Arg(1))
 	case "delete":
 		err = delete(os.Stdin)
 	case "wipe":
 		err = wipe()
+	case "version":
+		fmt.Fprint(os.Stderr, version)
 	default:
-		flag.Usage()
+		flags.Usage()
 		return 1
 	}
 	if err != nil {

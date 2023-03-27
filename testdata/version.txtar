@@ -1,0 +1,2 @@
+exec cliphist version
+stderr '^\d+\.\d+\.\d+$'
