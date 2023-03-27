@@ -3,7 +3,7 @@ module go.senan.xyz/cliphist
 go 1.19
 
 require (
-	github.com/rogpeppe/go-internal v1.9.1-0.20230322215406-00e5e28d9d38
+	github.com/rogpeppe/go-internal v1.10.0
 	go.etcd.io/bbolt v1.3.7
 )
 
