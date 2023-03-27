@@ -1,0 +1,21 @@
+stdin in
+exec cliphist store
+
+# preview should be flat
+exec cliphist list
+stdout '^1	a b c d e f g h i j$'
+stdout -count=1 '^.'
+
+# but what's stored should be identical
+stdin query
+exec cliphist decode
+cp stdout out
+cmp in out
+
+-- in --
+		a	b
+  c  d  	e  f
+    g  h  i j  
+
+-- query --
+1	
