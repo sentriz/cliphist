@@ -52,3 +52,8 @@ or else query manually
 ### packaging
 
 [![](https://repology.org/badge/vertical-allrepos/cliphist.svg)](https://repology.org/project/cliphist/versions)
+
+
+### video
+
+https://user-images.githubusercontent.com/6832539/230513908-b841fffe-d7d5-46c2-b29f-28b3e91daa74.mp4
