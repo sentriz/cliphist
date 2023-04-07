@@ -4,7 +4,7 @@
 case "$1" in
 	preview)
 		# show preview if non-binary data
-		echo "$2" | grep -q '^[[:digit:]]*\. binary data' || echo "$2" | cliphist decode
+		echo "$2" | grep -q '[\[ binary data .* \]\]' || echo "$2" | cliphist decode
 		;;
 	*)
 		exec cliphist list |

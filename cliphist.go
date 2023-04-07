@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,12 +15,18 @@ import (
 	"time"
 
 	_ "embed"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 
+	"github.com/dustin/go-humanize"
 	bolt "go.etcd.io/bbolt"
 )
 
 //go:embed version.txt
 var version string
+
+const fieldSep = "\t"
 
 // allow us to test main
 func main() { os.Exit(main_()) }
@@ -172,7 +179,7 @@ func list(out io.Writer) error {
 }
 
 func extractID(input []byte) (uint64, error) {
-	idStr, _, found := strings.Cut(string(input), "\t")
+	idStr, _, found := strings.Cut(string(input), fieldSep)
 	if !found {
 		return 0, fmt.Errorf("input not prefixed with id")
 	}
@@ -206,7 +213,7 @@ func decode(in io.Reader, out io.Writer) error {
 	defer tx.Rollback() //nolint:errcheck
 
 	b := tx.Bucket([]byte(bucketKey))
-	v := b.Get(itob(uint64(id)))
+	v := b.Get(itob(id))
 	if _, err := out.Write(v); err != nil {
 		return fmt.Errorf("writing out: %w", err)
 	}
@@ -267,7 +274,7 @@ func delete(in io.Reader) error {
 	defer tx.Rollback() //nolint:errcheck
 
 	b := tx.Bucket([]byte(bucketKey))
-	if err := b.Delete(itob(uint64(id))); err != nil {
+	if err := b.Delete(itob(id)); err != nil {
 		return fmt.Errorf("delete key: %w", err)
 	}
 
@@ -346,28 +353,14 @@ func initDBOption(ro bool) (*bolt.DB, error) {
 }
 
 func preview(index uint64, data []byte) string {
-	data = data[:min(len(data), 100)]
-	if mime := mime(data); mime != "" {
-		return fmt.Sprintf("%d\tbinary data %s", index, mime)
+	if config, format, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
+		return fmt.Sprintf("%d%s[[ binary data %s %s %dx%d ]]",
+			index, fieldSep, sizeStr(len(data)), format, config.Width, config.Height)
 	}
+	data = data[:min(len(data), 100)]
 	data = bytes.TrimSpace(data)
 	data = bytes.Join(bytes.Fields(data), []byte(" "))
-	return fmt.Sprintf("%d\t%s", index, data)
-}
-
-func mime(data []byte) string {
-	switch {
-	case bytes.HasPrefix(data, []byte("\x89PNG\x0D\x0A\x1A\x0A")):
-		return "image/png"
-	case bytes.HasPrefix(data, []byte("\xFF\xD8\xFF")):
-		return "image/jpeg"
-	case bytes.HasPrefix(data, []byte("GIF87a")):
-		return "image/gif"
-	case bytes.HasPrefix(data, []byte("GIF89a")):
-		return "image/gif"
-	default:
-		return ""
-	}
+	return fmt.Sprintf("%d%s%s", index, fieldSep, data)
 }
 
 func min(a, b int) int {
@@ -385,4 +378,8 @@ func itob(v uint64) []byte {
 
 func btoi(v []byte) uint64 {
 	return binary.BigEndian.Uint64(v)
+}
+
+func sizeStr(s int) string {
+	return strings.ReplaceAll(humanize.Bytes(uint64(s)), " ", "")
 }
