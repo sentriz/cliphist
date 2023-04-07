@@ -10,7 +10,17 @@ exec rand 16
 stdin stdout
 exec cliphist -max-items 2 store
 
+# we only kept 2
 exec cliphist list
 ! stdout '^1\t'
 stdout '^2\t'
 stdout '^3\t'
+
+exec rand 16
+stdin stdout
+exec cliphist -max-items 0 store
+
+# 0 clears the lot
+exec cliphist list
+! stdout .
+! stderr .
