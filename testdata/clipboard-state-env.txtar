@@ -1,0 +1,19 @@
+env CLIPBOARD_STATE=data
+exec rand 8
+stdin stdout
+exec cliphist store
+
+# check 1 item with CLIPBOARD_STATE=data
+exec cliphist list
+stdout -count=1 '^.'
+
+cliphist wipe
+
+env CLIPBOARD_STATE=sensitive
+exec rand 8
+stdin stdout
+exec cliphist store
+
+# check 0 items with CLIPBOARD_STATE=sensitive
+exec cliphist list
+! stdout .

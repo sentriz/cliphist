@@ -52,6 +52,12 @@ func main_() int {
 	var err error
 	switch flags.Arg(0) {
 	case "store":
+		// from man wl-clipboard
+		switch os.Getenv("CLIPBOARD_STATE") {
+		case "sensitive":
+			return 0
+		}
+
 		err = store(os.Stdin, *maxDedupeSearch, *maxItems)
 	case "list":
 		err = list(os.Stdout)
