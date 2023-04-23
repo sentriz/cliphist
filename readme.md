@@ -53,7 +53,17 @@ or else query manually
 ---
 
 ### faq
+<details>
+<summary><strong>how can i display my clipboard history in rofi?</strong></summary>
+you can use <a href="https://github.com/sentriz/cliphist/blob/master/cliphist-rofi-script.sh">the script found in the repo</a>, which is the recommended way.
 
+you can also use the dmenu method:
+  
+```shell
+# rofi
+cliphist list | rofi -dmenu | cliphist decode | wl-copy
+```
+</details>
 <details>
 <summary><strong>why do i have numbers in my picker? can i get rid of them?</strong></summary>
 
