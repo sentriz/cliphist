@@ -19,7 +19,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
-	"github.com/dustin/go-humanize"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -386,6 +385,14 @@ func btoi(v []byte) uint64 {
 	return binary.BigEndian.Uint64(v)
 }
 
-func sizeStr(s int) string {
-	return strings.ReplaceAll(humanize.Bytes(uint64(s)), " ", "")
+func sizeStr(size int) string {
+	units := []string{"B", "KiB", "MiB"}
+
+	var i int
+	fsize := float64(size)
+	for fsize >= 1024 && i < len(units)-1 {
+		fsize /= 1024
+		i++
+	}
+	return fmt.Sprintf("%.0f %s", fsize, units[i])
 }
