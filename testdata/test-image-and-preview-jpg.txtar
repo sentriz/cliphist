@@ -6,7 +6,7 @@ exec cliphist store
 
 # check we render preview
 exec cliphist list
-stdout '[[ binary data .*? jpeg 20x20 ]]'
+stdout '\[\[ binary data \d+ B jpeg 20x20 \]\]'
 
 stdin query
 exec cliphist decode
