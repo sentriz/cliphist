@@ -52,6 +52,38 @@ or else query manually
 
 ---
 
+### picker examples
+
+<details>
+<summary>dmenu</summary>
+
+`cliphist list | dmenu | cliphist decode | wl-copy`
+
+</details>
+
+<details>
+<summary>fzf</summary>
+
+`cliphist list | fzf | cliphist decode | wl-copy`
+
+</details>
+
+<details>
+<summary>rofi</summary>
+
+`rofi -modi clipboard:/path/to/cliphist-rofi -show clipboard` with [contrib/cliphist-rofi](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi)
+
+</details>
+
+<details>
+<summary>rofi dmenu mode</summary>
+
+`cliphist list | rofi -dmenu | cliphist decode | wl-copy`
+
+</details>
+
+---
+
 ### faq
 
 <details>
