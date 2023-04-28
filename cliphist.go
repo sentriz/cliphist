@@ -25,8 +25,6 @@ import (
 //go:embed version.txt
 var version string
 
-const fieldSep = "\t"
-
 // allow us to test main
 func main() { os.Exit(main_()) }
 func main_() int {
@@ -182,6 +180,8 @@ func list(out io.Writer) error {
 	}
 	return nil
 }
+
+const fieldSep = "\t"
 
 func extractID(input []byte) (uint64, error) {
 	idStr, _, found := strings.Cut(string(input), fieldSep)
