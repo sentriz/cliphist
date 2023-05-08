@@ -7,7 +7,7 @@ exec cliphist store
 exec cliphist list
 stdout -count=1 '^.'
 
-cliphist wipe
+exec cliphist wipe
 
 env CLIPBOARD_STATE=sensitive
 exec rand 8
