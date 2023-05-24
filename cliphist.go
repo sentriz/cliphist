@@ -87,7 +87,7 @@ func store(in io.Reader, maxDedupeSearch, maxItems uint64) error {
 
 	db, err := initDB()
 	if err != nil {
-		return fmt.Errorf("opening db: %v", err)
+		return fmt.Errorf("opening db: %w", err)
 	}
 	defer db.Close()
 
