@@ -1,0 +1,19 @@
+exec bmp
+cp stdout in.bmp
+
+stdin stdout
+exec cliphist store
+
+# check we render preview
+exec cliphist list
+stdout '\[\[ binary data \d+ KiB bmp 20x20 \]\]'
+
+stdin query
+exec cliphist decode
+cp stdout out.bmp
+
+# check we didn't lose any bytes
+cmp in.bmp out.bmp
+
+-- query --
+1	

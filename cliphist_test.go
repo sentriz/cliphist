@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/rogpeppe/go-internal/testscript"
+	"golang.org/x/image/bmp"
 )
 
 func TestMain(m *testing.M) {
@@ -28,6 +29,10 @@ func TestMain(m *testing.M) {
 		},
 		"jpg": func() int {
 			_ = jpeg.Encode(os.Stdout, image.NewRGBA(image.Rectangle{Max: image.Point{20, 20}}), nil)
+			return 0
+		},
+		"bmp": func() int {
+			_ = bmp.Encode(os.Stdout, image.NewRGBA(image.Rectangle{Max: image.Point{20, 20}}))
 			return 0
 		},
 	}))

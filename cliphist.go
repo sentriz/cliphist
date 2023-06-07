@@ -19,6 +19,8 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	_ "golang.org/x/image/bmp"
+
 	bolt "go.etcd.io/bbolt"
 )
 
