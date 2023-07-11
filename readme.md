@@ -106,7 +106,9 @@ cliphist list | rofi -dmenu -display-columns 2 | cliphist decode | wl-copy
 ```shell
 # wofi
 # it kind of works but breaks with quotes in the original selection. i recommend not trying to hide the column with wofi
-cliphist list | wofi --dmenu --pre-display-cmd "echo '%s' | cut -f 2" | cliphist decode | wl-copy
+cliphist list | wofi --dmenu --pre-display-cmd "echo -n '%s' | cut -z -f 2" | cliphist decode | wl-copy
+# if you want to try anyway, this should handle quotes correctly
+cliphist list | xargs -d "\n" printf "%q\n" | wofi --dmenu --pre-display-cmd "echo -n %s | cut -z -f 2" | xargs -0 -I {} bash -c "echo {}" | cliphist decode | wl-copy
 ```
 
 </details>
