@@ -306,13 +306,21 @@ func wipe() error {
 
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
+	// Delete all keys
 	for k, _ := c.First(); k != nil; k, _ = c.Next() {
 		_ = b.Delete(k)
+	}
+
+	// Reset the key sequence to 0
+	if err := b.SetSequence(0); err != nil {
+		return fmt.Errorf("set sequence: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
 	}
+
+	
 	return nil
 }
 
