@@ -1,0 +1,23 @@
+stdin in-a
+exec cliphist store
+
+stdin in-b
+exec cliphist store
+
+exec cliphist decode 1
+stdout '^a$'
+
+exec cliphist decode 2
+stdout '^b$'
+
+exec cliphist decode 3
+stdout '^$'
+
+! exec cliphist decode
+stderr 'input not prefixed with id'
+
+-- in-a --
+a
+
+-- in-b --
+b

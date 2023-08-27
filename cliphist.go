@@ -61,7 +61,7 @@ func main_() int {
 	case "list":
 		err = list(os.Stdout)
 	case "decode":
-		err = decode(os.Stdin, os.Stdout)
+		err = decode(os.Stdin, os.Stdout, flags.Arg(1))
 	case "delete-query":
 		err = deleteQuery(flags.Arg(1))
 	case "delete":
@@ -185,9 +185,9 @@ func list(out io.Writer) error {
 
 const fieldSep = "\t"
 
-func extractID(input []byte) (uint64, error) {
-	idStr, _, found := strings.Cut(string(input), fieldSep)
-	if !found {
+func extractID(input string) (uint64, error) {
+	idStr, _, _ := strings.Cut(input, fieldSep)
+	if idStr == "" {
 		return 0, fmt.Errorf("input not prefixed with id")
 	}
 	id, err := strconv.Atoi(idStr)
@@ -197,21 +197,24 @@ func extractID(input []byte) (uint64, error) {
 	return uint64(id), nil
 }
 
-func decode(in io.Reader, out io.Writer) error {
-	input, err := io.ReadAll(in)
-	if err != nil {
-		return fmt.Errorf("read stdin: %w", err)
+func decode(in io.Reader, out io.Writer, input string) error {
+	if input == "" {
+		inp, err := io.ReadAll(in)
+		if err != nil {
+			return fmt.Errorf("read stdin: %w", err)
+		}
+		input = string(inp)
 	}
+	id, err := extractID(input)
+	if err != nil {
+		return fmt.Errorf("extracting id: %w", err)
+	}
+
 	db, err := initDBReadOnly()
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
 	}
 	defer db.Close()
-
-	id, err := extractID(input)
-	if err != nil {
-		return fmt.Errorf("extracting id: %w", err)
-	}
 
 	tx, err := db.Begin(false)
 	if err != nil {
@@ -269,7 +272,7 @@ func delete(in io.Reader) error {
 	}
 	defer db.Close()
 
-	id, err := extractID(input)
+	id, err := extractID(string(input))
 	if err != nil {
 		return fmt.Errorf("extract id: %w", err)
 	}
