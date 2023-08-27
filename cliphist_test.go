@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"image"
+	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"io"
@@ -27,8 +28,9 @@ func TestMain(m *testing.M) {
 			return 0
 		},
 
-		"png": func() int { _ = png.Encode(os.Stdout, testImage); return 0 },
+		"gif": func() int { _ = gif.Encode(os.Stdout, testImage, nil); return 0 },
 		"jpg": func() int { _ = jpeg.Encode(os.Stdout, testImage, nil); return 0 },
+		"png": func() int { _ = png.Encode(os.Stdout, testImage); return 0 },
 		"bmp": func() int { _ = bmp.Encode(os.Stdout, testImage); return 0 },
 	}))
 }

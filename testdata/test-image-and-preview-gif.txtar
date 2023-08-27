@@ -1,0 +1,19 @@
+exec gif
+cp stdout in.gif
+
+stdin stdout
+exec cliphist store
+
+# check we render preview
+exec cliphist list
+stdout '\[\[ binary data \d+ B gif 20x20 \]\]'
+
+stdin query
+exec cliphist decode
+cp stdout out.gif
+
+# check we didn't lose any bytes
+cmp in.gif out.gif
+
+-- query --
+1	
