@@ -262,7 +262,7 @@ func deleteQuery(query string) error {
 }
 
 func delete(in io.Reader) error {
-	input, err := io.ReadAll(os.Stdin)
+	input, err := io.ReadAll(in)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
