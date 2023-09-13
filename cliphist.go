@@ -51,13 +51,13 @@ func main_() int {
 	var err error
 	switch flags.Arg(0) {
 	case "store":
-		// from man wl-clipboard
-		switch os.Getenv("CLIPBOARD_STATE") {
+		switch x := os.Getenv("CLIPBOARD_STATE"); x { // from man wl-clipboard
 		case "sensitive":
-			return 0
+		case "clear":
+			err = deleteLast()
+		default:
+			err = store(os.Stdin, *maxDedupeSearch, *maxItems)
 		}
-
-		err = store(os.Stdin, *maxDedupeSearch, *maxItems)
 	case "list":
 		err = list(os.Stdout)
 	case "decode":
@@ -254,6 +254,30 @@ func deleteQuery(query string) error {
 			_ = b.Delete(k)
 		}
 	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx: %w", err)
+	}
+	return nil
+}
+
+func deleteLast() error {
+	db, err := initDB()
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin(true)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	b := tx.Bucket([]byte(bucketKey))
+	c := b.Cursor()
+	k, _ := c.Last()
+	_ = b.Delete(k)
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit tx: %w", err)

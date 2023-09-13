@@ -1,0 +1,32 @@
+stdin in-1
+exec cliphist store
+stdin in-2
+exec cliphist store
+stdin in-3
+exec cliphist store
+
+exec cliphist list
+cmp stdout out-before
+
+env CLIPBOARD_STATE=clear
+exec cliphist store
+
+exec cliphist list
+cmp stdout out-after
+
+-- in-1 --
+test input 1
+
+-- in-2 --
+test input 2
+
+-- in-3 --
+test input 3
+
+-- out-before --
+3	test input 3
+2	test input 2
+1	test input 1
+-- out-after --
+2	test input 2
+1	test input 1
