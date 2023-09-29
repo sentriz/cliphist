@@ -29,11 +29,12 @@ var version string
 
 // allow us to test main
 func main() { os.Exit(main_()) }
+
 func main_() int {
 	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage:\n")
-		fmt.Fprintf(os.Stderr, "  $ %s <store|list|decode|delete|delete-query|wipe|version>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  $ %s <store|show|list|decode|delete|delete-query|wipe|version>\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "options:\n")
 		flags.VisitAll(func(f *flag.Flag) {
 			fmt.Fprintf(os.Stderr, "  -%s (default %s)\n", f.Name, f.DefValue)
@@ -70,6 +71,8 @@ func main_() int {
 		err = wipe()
 	case "version":
 		fmt.Fprint(os.Stderr, version)
+	case "show":
+		err = show(os.Stdout, flags.Arg(1))
 	default:
 		flags.Usage()
 		return 1
@@ -120,6 +123,29 @@ func store(in io.Reader, maxDedupeSearch, maxItems uint64) error {
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
+	}
+	return nil
+}
+
+func show(out io.Writer, id string) error {
+	db, err := initDBReadOnly()
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin(false)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	b := tx.Bucket([]byte(bucketKey))
+	c := b.Cursor()
+	for k, v := c.Last(); k != nil; k, v = c.Prev() {
+		if fmt.Sprintf("%d", int(btoi(k))) == id {
+			fmt.Fprintln(out, string(v))
+		}
 	}
 	return nil
 }
