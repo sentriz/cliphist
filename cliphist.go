@@ -33,7 +33,7 @@ func main_() int {
 	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage:\n")
-		fmt.Fprintf(os.Stderr, "  $ %s <store|list|decode|decode-query|delete|wipe|version>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "  $ %s <store|list|decode|delete|delete-query|wipe|version>\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "options:\n")
 		flags.VisitAll(func(f *flag.Flag) {
 			fmt.Fprintf(os.Stderr, "  -%s (default %s)\n", f.Name, f.DefValue)
