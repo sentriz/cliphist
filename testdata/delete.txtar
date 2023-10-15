@@ -3,14 +3,15 @@ exec cliphist store
 
 stdin in-bad-1
 exec cliphist store
-
 stdin in-bad-2
 exec cliphist store
+stdin in-bad-3
+exec cliphist store
 
-stdin in-bad-1-id
+stdin delete-query
 exec cliphist delete
 
-exec cliphist delete-query 'bad-2'
+exec cliphist delete-query 'bad-3'
 exec cliphist delete-query 'i dont exist'
 
 exec cliphist list
@@ -18,15 +19,15 @@ cmp stdout out
 
 -- in-good --
 im a test
-
 -- in-bad-1 --
 im a bad-1 test
-
 -- in-bad-2 --
 im a bad-2 test
+-- in-bad-3 --
+im a bad-3 test
 
--- in-bad-1-id --
+-- delete-query --
 2	x
-
+3	x
 -- out --
 1	im a test

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
@@ -286,7 +287,7 @@ func deleteLast() error {
 }
 
 func delete(in io.Reader) error {
-	input, err := io.ReadAll(in)
+	input, err := io.ReadAll(in) // drain stdin before opening and locking db
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
@@ -296,20 +297,21 @@ func delete(in io.Reader) error {
 	}
 	defer db.Close()
 
-	id, err := extractID(string(input))
-	if err != nil {
-		return fmt.Errorf("extract id: %w", err)
-	}
-
 	tx, err := db.Begin(true)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	defer tx.Rollback() //nolint:errcheck
 
-	b := tx.Bucket([]byte(bucketKey))
-	if err := b.Delete(itob(id)); err != nil {
-		return fmt.Errorf("delete key: %w", err)
+	for sc := bufio.NewScanner(bytes.NewReader(input)); sc.Scan(); {
+		id, err := extractID(sc.Text())
+		if err != nil {
+			return fmt.Errorf("extract id: %w", err)
+		}
+		b := tx.Bucket([]byte(bucketKey))
+		if err := b.Delete(itob(id)); err != nil {
+			return fmt.Errorf("delete key: %w", err)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
