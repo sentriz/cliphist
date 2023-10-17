@@ -52,7 +52,7 @@ func main_() int {
 	var err error
 	switch flags.Arg(0) {
 	case "store":
-		switch x := os.Getenv("CLIPBOARD_STATE"); x { // from man wl-clipboard
+		switch os.Getenv("CLIPBOARD_STATE") { // from man wl-clipboard
 		case "sensitive":
 		case "clear":
 			err = deleteLast()
