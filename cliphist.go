@@ -87,6 +87,9 @@ func store(in io.Reader, maxDedupeSearch, maxItems uint64) error {
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
+	if len(input) > 5*1e6 { // don't store >5MB
+		return nil
+	}
 
 	db, err := initDB()
 	if err != nil {
