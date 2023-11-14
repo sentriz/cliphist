@@ -75,6 +75,12 @@ or else query manually
 
 </details>
 
+<summary>rofi (displays images)</summary>
+
+`rofi -modi clipboard:/path/to/cliphist-rofi-img -show clipboard -show-icons` with [contrib/cliphist-rofi-img](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi-img)
+
+</details>
+
 <details>
 <summary>rofi dmenu mode</summary>
 
