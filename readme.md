@@ -69,22 +69,23 @@ or else query manually
 </details>
 
 <details>
-<summary>rofi</summary>
+<summary>rofi dmenu mode</summary>
+
+`cliphist list | rofi -dmenu | cliphist decode | wl-copy`
+
+</details>
+
+<details>
+<summary>rofi (custom mode)</summary>
 
 `rofi -modi clipboard:/path/to/cliphist-rofi -show clipboard` with [contrib/cliphist-rofi](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi)
 
 </details>
 
-<summary>rofi (displays images)</summary>
+<details>
+<summary>rofi with (custom mode with images)</summary>
 
 `rofi -modi clipboard:/path/to/cliphist-rofi-img -show clipboard -show-icons` with [contrib/cliphist-rofi-img](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi-img)
-
-</details>
-
-<details>
-<summary>rofi dmenu mode</summary>
-
-`cliphist list | rofi -dmenu | cliphist decode | wl-copy`
 
 </details>
 
