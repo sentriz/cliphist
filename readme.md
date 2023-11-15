@@ -78,14 +78,18 @@ or else query manually
 <details>
 <summary>rofi (custom mode)</summary>
 
-`rofi -modi clipboard:/path/to/cliphist-rofi -show clipboard` with [contrib/cliphist-rofi](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi)
+`rofi -modi clipboard:/path/to/cliphist-rofi -show clipboard`
+
+(requires [contrib/cliphist-rofi](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi))
 
 </details>
 
 <details>
 <summary>rofi (custom mode with images)</summary>
 
-`rofi -modi clipboard:/path/to/cliphist-rofi-img -show clipboard -show-icons` with [contrib/cliphist-rofi-img](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi-img)
+`rofi -modi clipboard:/path/to/cliphist-rofi-img -show clipboard -show-icons`
+
+(requires [contrib/cliphist-rofi-img](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi-img))
 
 </details>
 
