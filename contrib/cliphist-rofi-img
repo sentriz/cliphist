@@ -4,24 +4,22 @@ tmp_dir="/tmp/cliphist"
 rm -rf "$tmp_dir"
 
 if [[ -n "$1" ]]; then
-	cliphist decode <<<"$1" | wl-copy
-	exit
+    cliphist decode <<<"$1" | wl-copy
+    exit
 fi
 
 mkdir -p "$tmp_dir"
 
-cliphist list \
-	| grep -Fv '<meta http-equiv="content-type"' \
-	| while read -r data; do
-	fname="$(cut -f1 <<<"$data")"
-	fext="$(cut -f2 <<<"$data" | cut -d ' ' -f6)"
-	case "$fext" in
-		jpg|jpeg|png|bmp)
-			cliphist decode <<<"$data" >|"$tmp_dir"/"$fname"."$fext" &
-			echo -en "$data\0icon\x1f$tmp_dir/$fname.$fext\n"
-			;;
-		*)
-			echo "$data"
-			;;
-	esac
-done
+read -r -d '' prog <<EOF
+/<meta http-equiv=/ {
+    next
+}
+match(\$0, /^([0-9]+).*(jpg|jpeg|png|bmp)/, grp) {
+    system("echo " grp[1] "\\\\\t | cliphist decode >$tmp_dir/"grp[1]"."grp[2])
+    print \$0"\0icon\x1f$tmp_dir/"grp[1]"."grp[2]
+    next
+}
+1
+EOF
+
+cliphist list | gawk "$prog"
