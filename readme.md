@@ -69,7 +69,7 @@ or else query manually
 </details>
 
 <details>
-<summary>rofi dmenu mode</summary>
+<summary>rofi (dmenu mode)</summary>
 
 `cliphist list | rofi -dmenu | cliphist decode | wl-copy`
 
@@ -83,7 +83,7 @@ or else query manually
 </details>
 
 <details>
-<summary>rofi with (custom mode with images)</summary>
+<summary>rofi (custom mode with images)</summary>
 
 `rofi -modi clipboard:/path/to/cliphist-rofi-img -show clipboard -show-icons` with [contrib/cliphist-rofi-img](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi-img)
 
