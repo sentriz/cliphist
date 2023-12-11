@@ -142,7 +142,7 @@ now you should have text and raw image data available in your history. make sure
 
 ### packaging
 
-[![](https://repology.org/badge/vertical-allrepos/cliphist.svg)](https://repology.org/project/cliphist/versions)
+[![](https://repology.org/badge/vertical-allrepos/cliphist.svg?columns=3)](https://repology.org/project/cliphist/versions)
 
 ---
 
