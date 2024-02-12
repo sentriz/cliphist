@@ -1,0 +1,27 @@
+stdin in
+exec cliphist store
+
+exec cliphist list
+stdout '^1	one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen sev…$'
+
+-- in --
+one
+two
+three
+four
+five
+six
+seven
+eight
+nine
+ten
+eleven
+twelve
+thirteen
+fourteen
+fifteen
+sixteen
+seventeen
+eighteen
+nineteen
+twenty

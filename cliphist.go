@@ -396,13 +396,22 @@ func preview(index uint64, data []byte) string {
 		return fmt.Sprintf("%d%s[[ binary data %s %s %dx%d ]]",
 			index, fieldSep, sizeStr(len(data)), format, config.Width, config.Height)
 	}
-	data = data[:min(len(data), 100)]
-	data = bytes.TrimSpace(data)
-	data = bytes.Join(bytes.Fields(data), []byte(" "))
-	return fmt.Sprintf("%d%s%s", index, fieldSep, data)
+	prev := string(data)
+	prev = strings.TrimSpace(prev)
+	prev = strings.Join(strings.Fields(prev), " ")
+	prev = trunc(prev, 100, "…")
+	return fmt.Sprintf("%d%s%s", index, fieldSep, prev)
 }
 
-func min(a, b int) int {
+func trunc(in string, max int, ellip string) string {
+	runes := []rune(in)
+	if len(runes) > max {
+		return string(runes[:max]) + ellip
+	}
+	return in
+}
+
+func min(a, b int) int { //nolint:unused // we still support go1.19
 	if a < b {
 		return a
 	}
