@@ -391,12 +391,29 @@ func initDBOption(ro bool) (*bolt.DB, error) {
 	return db, nil
 }
 
+// Safely truncate a string to a given number of characters without breaking
+// UTF-8 encoding.
+// https://stackoverflow.com/a/46416000/14055185
+func truncateString(data []byte, limit int) []byte {
+	s := string(data)
+	result := s
+	chars := 0
+	for i := range s {
+		if chars >= limit {
+			result = s[:i]
+			break
+		}
+		chars++
+	}
+	return []byte(result)
+}
+
 func preview(index uint64, data []byte) string {
 	if config, format, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
 		return fmt.Sprintf("%d%s[[ binary data %s %s %dx%d ]]",
 			index, fieldSep, sizeStr(len(data)), format, config.Width, config.Height)
 	}
-	data = data[:min(len(data), 100)]
+	data = truncateString(data, 100)
 	data = bytes.TrimSpace(data)
 	data = bytes.Join(bytes.Fields(data), []byte(" "))
 	return fmt.Sprintf("%d%s%s", index, fieldSep, data)
