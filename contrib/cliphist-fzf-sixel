@@ -11,7 +11,7 @@ preview)
     ;;
 
 *)
-    id="$(cliphist list | dmenu clipboard 2 "$(realpath "$0") preview {}")"
+    id="$(cliphist list | fzf --preview "$(realpath "$0") preview {}")"
     test -z "$id" && exit
 
     cliphist decode <<<"$id" | wl-copy
