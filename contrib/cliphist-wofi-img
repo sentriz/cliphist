@@ -7,7 +7,7 @@
 # produces thumbnails and stores them in XDG_CACHE_HOME
 # note: does NOT put in clipboard, call wl-copy yourself!
 
-# setup thumbnail directory, clear this manually periodically
+# set up thumbnail directory
 thumb_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cliphist/thumbs"
 mkdir -p "$thumb_dir"
 
