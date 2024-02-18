@@ -11,6 +11,18 @@
 thumb_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cliphist/thumbs"
 mkdir -p "$thumb_dir"
 
+cliphist_list="$(cliphist list)"
+
+# delete thumbnails in cache but not in cliphist
+for thumb in "$thumb_dir"/*; do
+    clip_id="${thumb##*/}"
+    clip_id="${clip_id%.*}"
+    check=$(rg <<< "$cliphist_list" "^$clip_id\s")
+    if [ -z "$check" ]; then
+        >&2 rm -v "$thumb"
+    fi
+done
+
 # remove unnecessary image tags
 # create thumbnail if image not processed already
 # print escape sequence
@@ -25,7 +37,7 @@ match(\$0, /^([0-9]+)\s(\[\[\s)?binary.*(jpg|jpeg|png|bmp)/, grp) {
 1
 EOF
 
-choice="$(cliphist list | gawk "$prog" | wofi -I --dmenu)"
+choice=$(gawk <<< $cliphist_list "$prog" | wofi -I --dmenu)
 
 # stop execution if nothing selected in wofi menu
 [ -z "$choice" ] && exit 1
