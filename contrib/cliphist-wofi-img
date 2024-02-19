@@ -1,0 +1,53 @@
+#!/usr/bin/bash
+
+# executes same behaviour as below but with support for images
+#
+# cliphist list | wofi --dmenu | cliphist decode
+#
+# produces thumbnails and stores them in XDG_CACHE_HOME
+# note: does NOT put in clipboard, call wl-copy yourself!
+
+# set up thumbnail directory
+thumb_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cliphist/thumbs"
+mkdir -p "$thumb_dir"
+
+cliphist_list="$(cliphist list)"
+
+# delete thumbnails in cache but not in cliphist
+for thumb in "$thumb_dir"/*; do
+    clip_id="${thumb##*/}"
+    clip_id="${clip_id%.*}"
+    check=$(rg <<< "$cliphist_list" "^$clip_id\s")
+    if [ -z "$check" ]; then
+        >&2 rm -v "$thumb"
+    fi
+done
+
+# remove unnecessary image tags
+# create thumbnail if image not processed already
+# print escape sequence
+read -r -d '' prog <<EOF
+/^[0-9]+\s<meta http-equiv=/ { next }
+match(\$0, /^([0-9]+)\s(\[\[\s)?binary.*(jpg|jpeg|png|bmp)/, grp) {
+    image = grp[1]"."grp[3]
+    system("[ -f $thumb_dir/"image" ] || echo " grp[1] "\\\\\t | cliphist decode | convert - -resize '256x256>' $thumb_dir/"image )
+    print "img:$thumb_dir/"image
+    next
+}
+1
+EOF
+
+choice=$(gawk <<< $cliphist_list "$prog" | wofi -I --dmenu)
+
+# stop execution if nothing selected in wofi menu
+[ -z "$choice" ] && exit 1
+
+if [ "${choice::4}" = "img:" ]; then
+    thumb_file="${choice:4}"
+    clip_id="${thumb_file##*/}"
+    clip_id="${clip_id%.*}\t"
+else
+    clip_id="${choice}"
+fi
+
+printf "$clip_id" | cliphist decode
