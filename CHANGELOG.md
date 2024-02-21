@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.5.1](https://www.github.com/sentriz/cliphist/compare/v0.5.0...v0.5.1) (2024-02-21)
+
+
+### Bug Fixes
+
+* correctly truncate utf-8 string ([9128c08](https://www.github.com/sentriz/cliphist/commit/9128c08fd4e24464ddcede6c5a0d32dabfc1ec09)), closes [#82](https://www.github.com/sentriz/cliphist/issues/82)
+
 ## [0.5.0](https://www.github.com/sentriz/cliphist/compare/v0.4.0...v0.5.0) (2023-12-12)
 
 
