@@ -28,29 +28,23 @@ import (
 //go:embed version.txt
 var version string
 
-// allow us to test main
-func main() { os.Exit(main_()) }
-func main_() int {
-	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-	flags.Usage = func() {
+func main() {
+	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "usage:\n")
 		fmt.Fprintf(os.Stderr, "  $ %s <store|list|decode|delete|delete-query|wipe|version>\n", os.Args[0])
 		fmt.Fprintf(os.Stderr, "options:\n")
-		flags.VisitAll(func(f *flag.Flag) {
+		flag.VisitAll(func(f *flag.Flag) {
 			fmt.Fprintf(os.Stderr, "  -%s (default %s)\n", f.Name, f.DefValue)
 			fmt.Fprintf(os.Stderr, "    %s\n", f.Usage)
 		})
 	}
 
-	maxItems := flags.Uint64("max-items", 750, "maximum number of items to store")
-	maxDedupeSearch := flags.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
-
-	if err := flags.Parse(os.Args[1:]); err != nil {
-		return 1
-	}
+	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
+	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
+	flag.Parse()
 
 	var err error
-	switch flags.Arg(0) {
+	switch flag.Arg(0) {
 	case "store":
 		switch os.Getenv("CLIPBOARD_STATE") { // from man wl-clipboard
 		case "sensitive":
@@ -62,9 +56,9 @@ func main_() int {
 	case "list":
 		err = list(os.Stdout)
 	case "decode":
-		err = decode(os.Stdin, os.Stdout, flags.Arg(1))
+		err = decode(os.Stdin, os.Stdout, flag.Arg(1))
 	case "delete-query":
-		err = deleteQuery(flags.Arg(1))
+		err = deleteQuery(flag.Arg(1))
 	case "delete":
 		err = delete(os.Stdin)
 	case "wipe":
@@ -72,14 +66,13 @@ func main_() int {
 	case "version":
 		fmt.Fprint(os.Stderr, version)
 	default:
-		flags.Usage()
-		return 1
+		flag.Usage()
+		os.Exit(1)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return 1
+		os.Exit(1)
 	}
-	return 0
 }
 
 func store(in io.Reader, maxDedupeSearch, maxItems uint64) error {

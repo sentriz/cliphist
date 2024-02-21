@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	testImage := image.NewRGBA(image.Rectangle{Max: image.Point{20, 20}})
 
 	os.Exit(testscript.RunMain(m, map[string]func() int{
-		"cliphist": main_,
+		"cliphist": func() int { main(); return 0 },
 
 		"rand": func() int {
 			size, _ := strconv.Atoi(os.Args[1])
