@@ -1,0 +1,32 @@
+# default width is 100
+exec randstr 100
+stdin stdout
+exec cliphist store
+exec cliphist list
+! stdout …
+
+exec randstr 101
+stdin stdout
+exec cliphist store
+exec cliphist list
+stdout …
+
+exec randstr 1000
+stdin stdout
+exec cliphist store
+exec cliphist -preview-width 1000 list
+! stdout …
+
+exec randstr 1001
+stdin stdout
+exec cliphist store
+exec cliphist -preview-width 1000 list
+stdout -count=1 …
+
+! exec cliphist -preview-width -10 list
+
+exec cliphist -preview-width 1 list
+stdout -count=4 '.\t.…'
+
+exec cliphist -preview-width 0 list
+stdout -count=4 '.\t…'

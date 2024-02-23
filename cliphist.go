@@ -41,6 +41,7 @@ func main() {
 
 	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
+	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
 	flag.Parse()
 
 	var err error
@@ -54,7 +55,7 @@ func main() {
 			err = store(os.Stdin, *maxDedupeSearch, *maxItems)
 		}
 	case "list":
-		err = list(os.Stdout)
+		err = list(os.Stdout, *previewWidth)
 	case "decode":
 		err = decode(os.Stdin, os.Stdout, flag.Arg(1))
 	case "delete-query":
@@ -159,7 +160,7 @@ func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 	return nil
 }
 
-func list(out io.Writer) error {
+func list(out io.Writer, previewWidth uint) error {
 	db, err := initDBReadOnly()
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
@@ -175,7 +176,7 @@ func list(out io.Writer) error {
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
 	for k, v := c.Last(); k != nil; k, v = c.Prev() {
-		fmt.Fprintln(out, preview(btoi(k), v))
+		fmt.Fprintln(out, preview(btoi(k), v, previewWidth))
 	}
 	return nil
 }
@@ -384,7 +385,7 @@ func initDBOption(ro bool) (*bolt.DB, error) {
 	return db, nil
 }
 
-func preview(index uint64, data []byte) string {
+func preview(index uint64, data []byte, width uint) string {
 	if config, format, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
 		return fmt.Sprintf("%d%s[[ binary data %s %s %dx%d ]]",
 			index, fieldSep, sizeStr(len(data)), format, config.Width, config.Height)
@@ -392,7 +393,7 @@ func preview(index uint64, data []byte) string {
 	prev := string(data)
 	prev = strings.TrimSpace(prev)
 	prev = strings.Join(strings.Fields(prev), " ")
-	prev = trunc(prev, 100, "…")
+	prev = trunc(prev, int(width), "…")
 	return fmt.Sprintf("%d%s%s", index, fieldSep, prev)
 }
 
