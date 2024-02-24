@@ -1,0 +1,14 @@
+exec randstr 100
+stdin stdout
+exec cliphist store
+
+env CLIPHIST_PREVIEW_WIDTH=10
+exec cliphist list
+stdout '^.\t.{10}…$'
+
+env CLIPHIST_PREVIEW_WIDTH=
+exec cliphist -config-path conf list
+stdout '^.\t.{20}…$'
+
+-- conf --
+preview-width 20

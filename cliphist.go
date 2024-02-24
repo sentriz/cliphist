@@ -20,6 +20,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 
+	"go.senan.xyz/flagconf"
 	_ "golang.org/x/image/bmp"
 
 	bolt "go.etcd.io/bbolt"
@@ -28,21 +29,26 @@ import (
 //go:embed version.txt
 var version string
 
+//nolint:errcheck
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage:\n")
-		fmt.Fprintf(os.Stderr, "  $ %s <store|list|decode|delete|delete-query|wipe|version>\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "options:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "usage:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|delete|delete-query|wipe|version>\n", os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "options:\n")
 		flag.VisitAll(func(f *flag.Flag) {
-			fmt.Fprintf(os.Stderr, "  -%s (default %s)\n", f.Name, f.DefValue)
-			fmt.Fprintf(os.Stderr, "    %s\n", f.Usage)
+			fmt.Fprintf(flag.CommandLine.Output(), "  -%s (default %s)\n", f.Name, f.DefValue)
+			fmt.Fprintf(flag.CommandLine.Output(), "    %s\n", f.Usage)
 		})
 	}
 
 	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
+	configPath := flag.String("config-path", "$XDG_CONFIG_HOME/cliphist/config", "overwrite config path to use instead of cli flags")
+
 	flag.Parse()
+	flagconf.ParseEnv()
+	flagconf.ParseConfig(*configPath)
 
 	var err error
 	switch flag.Arg(0) {
