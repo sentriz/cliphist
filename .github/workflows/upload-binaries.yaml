@@ -17,12 +17,12 @@ jobs:
           - os: linux
             arch: 386
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v3
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.19.x
+          go-version-file: go.mod
       - name: Build binary
         run: |
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} CGO_ENABLED=0 go build -a -ldflags '-extldflags "-static"' -o cliphist-${{ github.ref }}-${{ matrix.os }}-${{ matrix.arch }} .
