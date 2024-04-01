@@ -10,6 +10,7 @@ import (
 	"io"
 	mathrand "math/rand"
 	"os"
+	"os/exec"
 	"strconv"
 	"testing"
 
@@ -44,6 +45,36 @@ func TestMain(m *testing.M) {
 		"png": func() int { _ = png.Encode(os.Stdout, testImage); return 0 },
 		"bmp": func() int { _ = bmp.Encode(os.Stdout, testImage); return 0 },
 	}))
+}
+
+func TestFilterPasswordType(t *testing.T) {
+	tests := []struct {
+		name          string
+		inCommandArgs []string
+		want          string
+	}{{
+		name:          "explicitly specified x-kde-passwordManagerHint",
+		inCommandArgs: []string{"--type", "x-kde-passwordManagerHint", "testvalue"},
+		want:          "password data detected, not storing",
+	}, {
+		name:          "random string",
+		inCommandArgs: []string{"testvalue-blah"},
+		want:          "",
+	},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := exec.Command("wl-copy", tt.inCommandArgs...).Run(); err != nil {
+				t.Errorf("failed to run wl-copy: %v", err)
+			}
+			got := filterPasswordType()
+			if got != nil && got.Error() != tt.want {
+				t.Errorf("filterPasswordType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+
 }
 
 func TestScripts(t *testing.T) {

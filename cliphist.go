@@ -10,6 +10,7 @@ import (
 	"image"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -82,11 +83,30 @@ func main() {
 	}
 }
 
+func filterPasswordType() error {
+	out, err := exec.Command("wl-paste", "--list-types").Output()
+	if err != nil {
+		return fmt.Errorf("error while checking MIME types of clipboard data: %w", err)
+	}
+	if strings.Contains(string(out), "x-kde-passwordManagerHint") {
+		return fmt.Errorf("password data detected, not storing")
+	}
+
+	return nil
+}
+
 func store(in io.Reader, maxDedupeSearch, maxItems uint64) error {
 	input, err := io.ReadAll(in)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
+	if err := filterPasswordType(); err != nil {
+		if err.Error() == "password data detected, not storing" {
+			return nil
+		}
+		return err
+	}
+
 	if len(input) > 5*1e6 { // don't store >5MB
 		return nil
 	}
