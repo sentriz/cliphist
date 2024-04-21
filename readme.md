@@ -93,6 +93,18 @@ or else query manually
 
 </details>
 
+<details>
+  <summary>wofi</summary>
+
+  `cliphist list | wofi -S dmenu | cliphist decode | wl-copy`
+
+  Example config for sway:
+```
+exec wl-paste --watch cliphist store
+bindsym Mod1+p exec cliphist list | wofi -S dmenu | cliphist decode | wl-copy
+```
+</details>
+
 ---
 
 ### faq
