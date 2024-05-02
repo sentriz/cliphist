@@ -44,11 +44,14 @@ func main() {
 	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
+	dbPath := flag.String("db-path", "$XDG_CACHE_HOME/cliphist/db", "path to db")
 	configPath := flag.String("config-path", "$XDG_CONFIG_HOME/cliphist/config", "overwrite config path to use instead of cli flags")
 
 	flag.Parse()
 	flagconf.ParseEnv()
 	flagconf.ParseConfig(*configPath)
+
+	*dbPath = os.ExpandEnv(*dbPath)
 
 	var err error
 	switch flag.Arg(0) {
@@ -56,22 +59,25 @@ func main() {
 		switch os.Getenv("CLIPBOARD_STATE") { // from man wl-clipboard
 		case "sensitive":
 		case "clear":
-			err = deleteLast()
+			err = deleteLast(*dbPath)
 		default:
-			err = store(os.Stdin, *maxDedupeSearch, *maxItems)
+			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems)
 		}
 	case "list":
-		err = list(os.Stdout, *previewWidth)
+		err = list(*dbPath, os.Stdout, *previewWidth)
 	case "decode":
-		err = decode(os.Stdin, os.Stdout, flag.Arg(1))
+		err = decode(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
 	case "delete-query":
-		err = deleteQuery(flag.Arg(1))
+		err = deleteQuery(*dbPath, flag.Arg(1))
 	case "delete":
-		err = delete(os.Stdin)
+		err = delete(*dbPath, os.Stdin)
 	case "wipe":
-		err = wipe()
+		err = wipe(*dbPath)
 	case "version":
-		fmt.Fprint(os.Stderr, version)
+		fmt.Fprintf(os.Stderr, "%s\t%s\n", "version", strings.TrimSpace(version))
+		flag.VisitAll(func(f *flag.Flag) {
+			fmt.Fprintf(os.Stderr, "%s\t%s\n", f.Name, f.Value)
+		})
 	default:
 		flag.Usage()
 		os.Exit(1)
@@ -82,7 +88,7 @@ func main() {
 	}
 }
 
-func store(in io.Reader, maxDedupeSearch, maxItems uint64) error {
+func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64) error {
 	input, err := io.ReadAll(in)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
@@ -91,7 +97,7 @@ func store(in io.Reader, maxDedupeSearch, maxItems uint64) error {
 		return nil
 	}
 
-	db, err := initDB()
+	db, err := initDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
 	}
@@ -166,8 +172,8 @@ func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 	return nil
 }
 
-func list(out io.Writer, previewWidth uint) error {
-	db, err := initDBReadOnly()
+func list(dbPath string, out io.Writer, previewWidth uint) error {
+	db, err := initDBReadOnly(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
 	}
@@ -201,7 +207,7 @@ func extractID(input string) (uint64, error) {
 	return uint64(id), nil
 }
 
-func decode(in io.Reader, out io.Writer, input string) error {
+func decode(dbPath string, in io.Reader, out io.Writer, input string) error {
 	if input == "" {
 		inp, err := io.ReadAll(in)
 		if err != nil {
@@ -214,7 +220,7 @@ func decode(in io.Reader, out io.Writer, input string) error {
 		return fmt.Errorf("extracting id: %w", err)
 	}
 
-	db, err := initDBReadOnly()
+	db, err := initDBReadOnly(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
 	}
@@ -234,12 +240,12 @@ func decode(in io.Reader, out io.Writer, input string) error {
 	return nil
 }
 
-func deleteQuery(query string) error {
+func deleteQuery(dbPath string, query string) error {
 	if query == "" {
 		return fmt.Errorf("please provide a query")
 	}
 
-	db, err := initDB()
+	db, err := initDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
 	}
@@ -265,8 +271,8 @@ func deleteQuery(query string) error {
 	return nil
 }
 
-func deleteLast() error {
-	db, err := initDB()
+func deleteLast(dbPath string) error {
+	db, err := initDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
 	}
@@ -289,12 +295,12 @@ func deleteLast() error {
 	return nil
 }
 
-func delete(in io.Reader) error {
+func delete(dbPath string, in io.Reader) error {
 	input, err := io.ReadAll(in) // drain stdin before opening and locking db
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
-	db, err := initDB()
+	db, err := initDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
 	}
@@ -323,8 +329,8 @@ func delete(in io.Reader) error {
 	return nil
 }
 
-func wipe() error {
-	db, err := initDB()
+func wipe(dbPath string) error {
+	db, err := initDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
 	}
@@ -350,28 +356,22 @@ func wipe() error {
 
 const bucketKey = "b"
 
-func initDB() (*bolt.DB, error)         { return initDBOption(false) }
-func initDBReadOnly() (*bolt.DB, error) { return initDBOption(true) }
+func initDB(path string) (*bolt.DB, error)         { return initDBOption(path, false) }
+func initDBReadOnly(path string) (*bolt.DB, error) { return initDBOption(path, true) }
 
-func initDBOption(ro bool) (*bolt.DB, error) {
-	userCacheDir, err := os.UserCacheDir()
-	if err != nil {
-		return nil, fmt.Errorf("get cache dir: %w", err)
-	}
-	cacheDir := filepath.Join(userCacheDir, "cliphist")
-	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+func initDBOption(path string, ro bool) (*bolt.DB, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return nil, fmt.Errorf("create cache dir: %w", err)
 	}
-	dbPath := filepath.Join(cacheDir, "db")
 
 	// https://github.com/etcd-io/bbolt/issues/98
 	if ro {
-		if _, err := os.Stat(dbPath); errors.Is(err, os.ErrNotExist) {
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 			return nil, errors.New("please store something first")
 		}
 	}
 
-	db, err := bolt.Open(dbPath, 0644, &bolt.Options{
+	db, err := bolt.Open(path, 0644, &bolt.Options{
 		ReadOnly: ro,
 		Timeout:  1 * time.Second,
 	})
