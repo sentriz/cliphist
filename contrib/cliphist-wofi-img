@@ -30,7 +30,7 @@ read -r -d '' prog <<EOF
 /^[0-9]+\s<meta http-equiv=/ { next }
 match(\$0, /^([0-9]+)\s(\[\[\s)?binary.*(jpg|jpeg|png|bmp)/, grp) {
     image = grp[1]"."grp[3]
-    system("[ -f $thumb_dir/"image" ] || echo " grp[1] "\\\\\t | cliphist decode | convert - -resize '256x256>' $thumb_dir/"image )
+    system("[ -f $thumb_dir/"image" ] || echo " grp[1] "\\\\\t | cliphist decode | magick - -resize '256x256>' $thumb_dir/"image )
     print "img:$thumb_dir/"image
     next
 }
