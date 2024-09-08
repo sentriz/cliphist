@@ -31,8 +31,7 @@ image mime inferance)
 #### listen for clipboard changes
 
 `$ wl-paste --watch cliphist store`  
-this will listen for changes on your primary keyboard and write it to
-the history.  
+this will listen for changes on your primary clipboard and write them to the history.  
 call it once per session - for example in your sway config
 
 #### select old item
