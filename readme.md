@@ -63,7 +63,7 @@ or else query manually
 <details>
 <summary>fzf</summary>
 
-`cliphist list | fzf | cliphist decode | wl-copy`
+`cliphist list | fzf --no-sort | cliphist decode | wl-copy`
 
 </details>
 
