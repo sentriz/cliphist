@@ -42,6 +42,7 @@ func main() {
 	}
 
 	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
+	expireDuration := flag.Uint64("expire-duration", 0, "duration after which items will get discarded in seconds, 0 for no expiration")
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
 	dbPath := flag.String("db-path", "$XDG_CACHE_HOME/cliphist/db", "path to db")
@@ -61,10 +62,10 @@ func main() {
 		case "clear":
 			err = deleteLast(*dbPath)
 		default:
-			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems)
+			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems, *expireDuration)
 		}
 	case "list":
-		err = list(*dbPath, os.Stdout, *previewWidth)
+		err = list(*dbPath, os.Stdout, *previewWidth, *expireDuration)
 	case "decode":
 		err = decode(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
 	case "delete-query":
@@ -88,7 +89,7 @@ func main() {
 	}
 }
 
-func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64) error {
+func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems, expireDuration uint64) error {
 	input, err := io.ReadAll(in)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
@@ -114,14 +115,15 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64) error 
 
 	b := tx.Bucket([]byte(bucketKey))
 
+	if err := expire(b, expireDuration); err != nil {
+		return fmt.Errorf("expiring: %w", err)
+	}
+
 	if err := deduplicate(b, input, maxDedupeSearch); err != nil {
 		return fmt.Errorf("deduplicating: %w", err)
 	}
-	id, err := b.NextSequence()
-	if err != nil {
-		return fmt.Errorf("getting next sequence: %w", err)
-	}
-	if err := b.Put(itob(id), input); err != nil {
+
+	if err := b.Put(itob(time.Now().UnixNano()), input); err != nil {
 		return fmt.Errorf("insert stdin: %w", err)
 	}
 	if err := trimLength(b, maxItems); err != nil {
@@ -172,7 +174,21 @@ func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 	return nil
 }
 
-func list(dbPath string, out io.Writer, previewWidth uint) error {
+func expire(b *bolt.Bucket, expireDuration uint64) error {
+	if expireDuration == 0 {
+		return nil
+	}
+	c := b.Cursor()
+	cutoffBytes := itob(time.Now().Add(-time.Duration(expireDuration) * time.Second).UnixNano())
+	for k, _ := c.First(); k != nil && bytes.Compare(k, cutoffBytes) < 0; k, _ = c.Next() {
+		if err := c.Delete(); err != nil {
+			return fmt.Errorf("delete :%w", err)
+		}
+	}
+	return nil
+}
+
+func list(dbPath string, out io.Writer, previewWidth uint, expireDuration uint64) error {
 	db, err := initDBReadOnly(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
@@ -187,7 +203,12 @@ func list(dbPath string, out io.Writer, previewWidth uint) error {
 
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
-	for k, v := c.Last(); k != nil; k, v = c.Prev() {
+
+	cutoffBytes := itob(0)
+	if expireDuration > 0 {
+		cutoffBytes = itob(time.Now().Add(-time.Duration(expireDuration) * time.Second).UnixNano())
+	}
+	for k, v := c.Last(); bytes.Compare(k, cutoffBytes) >= 0; k, v = c.Prev() {
 		fmt.Fprintln(out, preview(btoi(k), v, previewWidth))
 	}
 	return nil
@@ -195,7 +216,7 @@ func list(dbPath string, out io.Writer, previewWidth uint) error {
 
 const fieldSep = "\t"
 
-func extractID(input string) (uint64, error) {
+func extractID(input string) (int64, error) {
 	idStr, _, _ := strings.Cut(input, fieldSep)
 	if idStr == "" {
 		return 0, fmt.Errorf("input not prefixed with id")
@@ -204,7 +225,7 @@ func extractID(input string) (uint64, error) {
 	if err != nil {
 		return 0, fmt.Errorf("converting id: %w", err)
 	}
-	return uint64(id), nil
+	return int64(id), nil
 }
 
 func decode(dbPath string, in io.Reader, out io.Writer, input string) error {
@@ -418,9 +439,9 @@ func min(a, b int) int { //nolint:unused // we still support go1.19
 	return b
 }
 
-func itob(v uint64) []byte {
+func itob(v int64) []byte {
 	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, v)
+	binary.BigEndian.PutUint64(b, uint64(v))
 	return b
 }
 
