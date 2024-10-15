@@ -41,19 +41,27 @@ func main() {
 		})
 	}
 
+	cacheHome, err := os.UserCacheDir()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	configHome, err := os.UserConfigDir()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
-	dbPath := flag.String("db-path", "$XDG_CACHE_HOME/cliphist/db", "path to db")
-	configPath := flag.String("config-path", "$XDG_CONFIG_HOME/cliphist/config", "overwrite config path to use instead of cli flags")
+	dbPath := flag.String("db-path", filepath.Join(cacheHome, "cliphist", "db"), "path to db")
+	configPath := flag.String("config-path", filepath.Join(configHome, "cliphist", "config"), "overwrite config path to use instead of cli flags")
 
 	flag.Parse()
 	flagconf.ParseEnv()
 	flagconf.ParseConfig(*configPath)
 
-	*dbPath = os.ExpandEnv(*dbPath)
-
-	var err error
 	switch flag.Arg(0) {
 	case "store":
 		switch os.Getenv("CLIPBOARD_STATE") { // from man wl-clipboard
