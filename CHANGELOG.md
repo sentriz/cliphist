@@ -1,5 +1,12 @@
 # Changelog
 
+### [0.6.1](https://www.github.com/sentriz/cliphist/compare/v0.6.0...v0.6.1) (2024-10-15)
+
+
+### Bug Fixes
+
+* case when no XDG_{CACHE,CONFIG}_HOME ([b3d4bd4](https://www.github.com/sentriz/cliphist/commit/b3d4bd49e801a0b3438074911909dadace7ee0fb)), closes [#118](https://www.github.com/sentriz/cliphist/issues/118)
+
 ## [0.6.0](https://www.github.com/sentriz/cliphist/compare/v0.5.0...v0.6.0) (2024-10-15)
 
 
