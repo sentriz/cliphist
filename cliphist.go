@@ -57,6 +57,8 @@ func main() {
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
 	dbPath := flag.String("db-path", filepath.Join(cacheHome, "cliphist", "db"), "path to db")
 	configPath := flag.String("config-path", filepath.Join(configHome, "cliphist", "config"), "overwrite config path to use instead of cli flags")
+	imgDelim := flag.String("image", "''", "list image data to path")
+	tempDir := flag.String("image-path", filepath.Join(os.Getenv("XDG_RUNTIME_DIR")), "path to store images")
 
 	flag.Parse()
 	flagconf.ParseEnv()
@@ -72,7 +74,7 @@ func main() {
 			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems)
 		}
 	case "list":
-		err = list(*dbPath, os.Stdout, *previewWidth)
+		err = list(*dbPath, os.Stdout, *previewWidth, *imgDelim, *tempDir)
 	case "decode":
 		err = decode(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
 	case "delete-query":
@@ -180,7 +182,13 @@ func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 	return nil
 }
 
-func list(dbPath string, out io.Writer, previewWidth uint) error {
+func list(dbPath string, out io.Writer, previewWidth uint, imgDelim string, tempDir string) error {
+
+	if tempDir == "" {
+		tempDir = os.TempDir()
+	}
+	imgDir := filepath.Join(tempDir, "cliphist")
+
 	db, err := initDBReadOnly(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
@@ -193,10 +201,34 @@ func list(dbPath string, out io.Writer, previewWidth uint) error {
 	}
 	defer tx.Rollback() //nolint:errcheck
 
+	if err := os.MkdirAll(imgDir, 0755); err != nil {
+		return fmt.Errorf("creating image directory: %w", err)
+	}
+	decodedImgDelim, err := strconv.Unquote(`"` + imgDelim + `"`)
+	if err != nil {
+		return fmt.Errorf("decoding image delimiter: %w", err)
+	}
+	imgDelim = decodedImgDelim
+
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
+
 	for k, v := c.Last(); k != nil; k, v = c.Prev() {
-		fmt.Fprintln(out, preview(btoi(k), v, previewWidth))
+		id := btoi(k)
+		if imgDelim != "" {
+			if config, format, err := image.DecodeConfig(bytes.NewReader(v)); err == nil {
+				filePath := fmt.Sprintf("%s/%d.%s", imgDir, id, format)
+				if _, err := os.Stat(filePath); os.IsNotExist(err) {
+					if err := os.WriteFile(filePath, v, 0644); err != nil {
+						return fmt.Errorf("writing file: %w", err)
+					}
+				}
+				fmt.Fprintf(out, "%d%s[[ binary data %s %s %dx%d ]]%s%s\n",
+					id, fieldSep, sizeStr(len(v)), format, config.Width, config.Height, imgDelim, filePath)
+				continue
+			}
+		}
+		fmt.Fprintln(out, preview(id, v, previewWidth))
 	}
 	return nil
 }
