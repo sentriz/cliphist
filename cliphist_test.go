@@ -15,6 +15,7 @@ import (
 
 	"github.com/rogpeppe/go-internal/testscript"
 	"golang.org/x/image/bmp"
+	"golang.org/x/image/tiff"
 )
 
 func TestMain(m *testing.M) {
@@ -39,10 +40,11 @@ func TestMain(m *testing.M) {
 			return 0
 		},
 
-		"gif": func() int { _ = gif.Encode(os.Stdout, testImage, nil); return 0 },
-		"jpg": func() int { _ = jpeg.Encode(os.Stdout, testImage, nil); return 0 },
-		"png": func() int { _ = png.Encode(os.Stdout, testImage); return 0 },
-		"bmp": func() int { _ = bmp.Encode(os.Stdout, testImage); return 0 },
+		"gif":  func() int { _ = gif.Encode(os.Stdout, testImage, nil); return 0 },
+		"jpg":  func() int { _ = jpeg.Encode(os.Stdout, testImage, nil); return 0 },
+		"png":  func() int { _ = png.Encode(os.Stdout, testImage); return 0 },
+		"bmp":  func() int { _ = bmp.Encode(os.Stdout, testImage); return 0 },
+		"tiff": func() int { _ = tiff.Encode(os.Stdout, testImage, nil); return 0 },
 	}))
 }
 

@@ -22,6 +22,7 @@ import (
 
 	"go.senan.xyz/flagconf"
 	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 
 	bolt "go.etcd.io/bbolt"
 )

@@ -1,0 +1,19 @@
+exec tiff
+cp stdout in.tiff
+
+stdin stdout
+exec cliphist store
+
+# check we render preview
+exec cliphist list
+stdout '\[\[ binary data \d+ KiB tiff 20x20 \]\]'
+
+stdin query
+exec cliphist decode
+cp stdout out.tiff
+
+# check we didn't lose any bytes
+cmp in.tiff out.tiff
+
+-- query --
+1	
