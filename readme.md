@@ -51,6 +51,44 @@ or else query manually
 
 ---
 
+### configuration
+
+The app allows the use of command line parameters : 
+```
+options:
+  -config-path (default /home/gondin/.config/cliphist/config)
+    overwrite config path to use instead of cli flags
+  -db-path (default /home/gondin/.cache/cliphist/db)
+    path to db
+  -max-dedupe-search (default 100)
+    maximum number of last items to look through when finding duplicates
+  -max-items (default 750)
+    maximum number of items to store
+  -preview-width (default 100)
+    maximum number of characters to preview
+```
+
+The configuration file allows you to define the same options as the command-line parameters. By default, the configuration file path is `${CONFIG_HOME}/cliphist/config`.
+
+Using the default parameters, here is the default config file :
+
+```ini
+
+#path to db
+db-path = `${CONFIG_HOME}/.cache/cliphist/db`
+
+#maximum number of last items to look through when finding duplicates
+max-items = 750
+
+#maximum number of items to store
+max-dedupe-search = 100
+
+#maximum number of characters to preview
+preview-width = 100
+```
+
+---
+
 ### picker examples
 
 <details>
