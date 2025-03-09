@@ -75,6 +75,13 @@ or else query manually
 </details>
 
 <details>
+<summary>fuzzel (dmenu mode)</summary>
+
+`cliphist list | fuzzel --dmenu | cliphist decode | wl-copy`
+
+</details>
+
+<details>
 <summary>rofi (custom mode)</summary>
 
 `rofi -modi clipboard:/path/to/cliphist-rofi -show clipboard`
