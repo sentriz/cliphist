@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://www.github.com/sentriz/cliphist/compare/v0.6.1...v0.7.0) (2025-03-09)
+
+
+### Features
+
+* support tiff images ([1350191](https://www.github.com/sentriz/cliphist/commit/1350191061a7df1f70cd6e652eb0517d3a9a590f)), closes [#126](https://www.github.com/sentriz/cliphist/issues/126)
+
 ### [0.6.1](https://www.github.com/sentriz/cliphist/compare/v0.6.0...v0.6.1) (2024-10-15)
 
 
