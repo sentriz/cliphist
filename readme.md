@@ -75,16 +75,16 @@ Using the default parameters, here is the default config file :
 ```ini
 
 #path to db
-db-path = `${CONFIG_HOME}/.cache/cliphist/db`
+db-path `${CONFIG_HOME}/.cache/cliphist/db`
 
 #maximum number of last items to look through when finding duplicates
-max-items = 750
+max-items 750
 
 #maximum number of items to store
-max-dedupe-search = 100
+max-dedupe-search 100
 
 #maximum number of characters to preview
-preview-width = 100
+preview-width 100
 ```
 
 ---
