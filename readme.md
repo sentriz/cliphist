@@ -131,6 +131,11 @@ cliphist list | rofi -dmenu -display-columns 2 | cliphist decode | wl-copy
 ```
 
 ```shell
+# fuzzel
+cliphist list | fuzzel --dmenu --with-nth 2 | cliphist decode | wl-copy
+```
+
+```shell
 # wofi
 # It kind of works but breaks with quotes in the original selection. I recommend not trying to hide the column with wofi.
 cliphist list | wofi --dmenu --pre-display-cmd "echo '%s' | cut -f 2" | cliphist decode | wl-copy
