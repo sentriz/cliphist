@@ -78,6 +78,13 @@ Or else query manually:
 </details>
 
 <details>
+<summary>fuzzel (dmenu mode with images)</summary>
+
+[contrib/cliphist-fuzzel-img](./contrib/cliphist-fuzzel-img)
+
+</details>
+
+<details>
 <summary>rofi (custom mode)</summary>
 
 `rofi -modi clipboard:/path/to/cliphist-rofi -show clipboard`
