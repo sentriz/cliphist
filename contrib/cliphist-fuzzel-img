@@ -28,8 +28,7 @@ match(\$0, /^([0-9]+)\s(\[\[\s)?binary.*(jpg|jpeg|png|bmp)/, grp) {
 1
 EOF
 
-# "--with-nth 2" could be used once https://codeberg.org/dnkl/fuzzel/issues/551 is fixed
-item=$(echo "$cliphist_list" | gawk "$thumbnail" | fuzzel -d --placeholder "Search clipboard..." --counter --no-sort)
+item=$(echo "$cliphist_list" | gawk "$thumbnail" | fuzzel -d --placeholder "Search clipboard..." --counter --no-sort --with-nth 2)
 exit_code=$?
 
 # ALT+0 to clear history
