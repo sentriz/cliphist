@@ -80,7 +80,9 @@ Or else query manually:
 <details>
 <summary>fuzzel (dmenu mode with images)</summary>
 
-[contrib/cliphist-fuzzel-img](./contrib/cliphist-fuzzel-img)
+`./cliphist-fuzzel-img`
+
+(Requires [contrib/cliphist-fuzzel-img](./contrib/cliphist-fuzzel-img))
 
 </details>
 
