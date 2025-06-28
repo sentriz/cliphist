@@ -35,6 +35,14 @@ exit_code=$?
 if [ "$exit_code" -eq 19 ]; then
   confirmation=$(echo -e "No\nYes" | fuzzel -d --placeholder "Delete history?" --lines 2)
   [ "$confirmation" == "Yes" ] && rm ~/.cache/cliphist/db && rm -rf "$thumbnail_dir"
+# ALT+1 to delete selected item
+# configure the keybind with `custom-1` in your fuzzel.ini
+elif [ "$exit_code" -eq 10 ]; then
+  if [ -n "$item" ]; then
+    item_id=$(echo "$item" | cut -f1)
+    echo "$item_id" | cliphist delete
+    find "$thumbnail_dir" -name "${item_id}.*" -delete
+  fi
 else
   [ -z "$item" ] || echo "$item" | cliphist decode | wl-copy
 fi
@@ -42,7 +50,7 @@ fi
 # Delete cached thumbnails that are no longer in cliphist db
 find "$thumbnail_dir" -type f | while IFS= read -r thumbnail_file; do
   cliphist_item_id=$(basename "${thumbnail_file%.*}")
-  if [ -z "$(grep <<< "$cliphist_list" "^${cliphist_item_id}\s\[\[ binary data")" ]; then
+  if ! grep -q "^${cliphist_item_id}\s\[\[ binary data" <<<"$cliphist_list"; then
     rm "$thumbnail_file"
   fi
 done
