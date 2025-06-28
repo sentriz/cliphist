@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.0](https://www.github.com/sentriz/cliphist/compare/v0.6.1...v0.7.0) (2025-06-28)
+
+
+### Features
+
+* **contrib:** add fuzzel img script ([#144](https://www.github.com/sentriz/cliphist/issues/144)) ([9dac7d3](https://www.github.com/sentriz/cliphist/commit/9dac7d3ff533140ad31e835a413a8380b99f96d3))
+* **contrib:** add option to delete specific entry in cliphist-fuzzel-img ([#148](https://www.github.com/sentriz/cliphist/issues/148)) ([ff1d247](https://www.github.com/sentriz/cliphist/commit/ff1d247e3521bd7ebcb6463f86349bab71440496))
+* **contrib:** add systemd service ([#138](https://www.github.com/sentriz/cliphist/issues/138)) ([e626b1b](https://www.github.com/sentriz/cliphist/commit/e626b1b60083453b4ff74f7c8dc251415e2abbc4))
+* **contrib:** use portable shebang lines ([#147](https://www.github.com/sentriz/cliphist/issues/147)) ([f49bd90](https://www.github.com/sentriz/cliphist/commit/f49bd905cff72d32d62c209224353865436f9a13))
+* support tiff images ([1350191](https://www.github.com/sentriz/cliphist/commit/1350191061a7df1f70cd6e652eb0517d3a9a590f)), closes [#126](https://www.github.com/sentriz/cliphist/issues/126)
+
 ### [0.6.1](https://www.github.com/sentriz/cliphist/compare/v0.6.0...v0.6.1) (2024-10-15)
 
 
