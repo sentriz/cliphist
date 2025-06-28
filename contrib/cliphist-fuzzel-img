@@ -42,7 +42,7 @@ fi
 # Delete cached thumbnails that are no longer in cliphist db
 find "$thumbnail_dir" -type f | while IFS= read -r thumbnail_file; do
   cliphist_item_id=$(basename "${thumbnail_file%.*}")
-  if [ -z "$(grep <<< "$cliphist_list" "^${cliphist_item_id}\s\[\[ binary data")" ]; then
+  if ! grep -q "^${cliphist_item_id}\s\[\[ binary data" <<<"$cliphist_list"; then
     rm "$thumbnail_file"
   fi
 done
