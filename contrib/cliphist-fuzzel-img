@@ -1,27 +1,24 @@
 #!/usr/bin/env bash
 
-# requires imagemagick to generate thumbnails
-
-thumbnail_size=64
 thumbnail_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cliphist/thumbnails"
 
 cliphist_list=$(cliphist list)
 if [ -z "$cliphist_list" ]; then
-  fuzzel -d --placeholder "cliphist: please store something first" --lines 0
+  fuzzel -d --prompt-only "cliphist: please store something first "
   rm -rf "$thumbnail_dir"
   exit
 fi
 
 [ -d "$thumbnail_dir" ] || mkdir -p "$thumbnail_dir"
 
-# Write square shaped thumbnail to cache if it doesn't exist
+# Write binary image to cache file if it doesn't exist
 read -r -d '' thumbnail <<EOF
 /^[0-9]+\s<meta http-equiv=/ { next }
 match(\$0, /^([0-9]+)\s(\[\[\s)?binary.*(jpg|jpeg|png|bmp)/, grp) {
   cliphist_item_id=grp[1]
   ext=grp[3]
   thumbnail_file=cliphist_item_id"."ext
-  system("[ -f ${thumbnail_dir}/"thumbnail_file" ] || echo " cliphist_item_id "\\\\\t | cliphist decode | magick - -thumbnail ${thumbnail_size}^ -gravity center -extent ${thumbnail_size} ${thumbnail_dir}/"thumbnail_file)
+  system("[ -f ${thumbnail_dir}/"thumbnail_file" ] || echo " cliphist_item_id "\\\\\t | cliphist decode >${thumbnail_dir}/"thumbnail_file)
   print \$0"\0icon\x1f${thumbnail_dir}/"thumbnail_file
   next
 }
