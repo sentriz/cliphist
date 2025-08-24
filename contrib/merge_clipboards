@@ -1,0 +1,10 @@
+#!/usr/bin/php
+# Execute like: cliphist list | rofi -dmenu -display-columns 2 | cliphist decode | /usr/local/bin/merge_clipboards
+<?php
+$decoded = stream_get_contents(fopen("php://stdin", "r"));
+if (preg_match('/^https:\/\/youtu\.be\/[A-Za-z0-9_-]+(\?si=.*)?$/', $decoded, $matches)) {
+  $decoded = str_replace($matches[1], '', $decoded);
+}
+file_put_contents('/tmp/.clipboard', $decoded);
+shell_exec("wl-copy --primary < /tmp/.clipboard");
+shell_exec("wl-copy < /tmp/.clipboard");
