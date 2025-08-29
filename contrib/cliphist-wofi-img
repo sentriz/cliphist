@@ -37,7 +37,7 @@ match(\$0, /^([0-9]+)\s(\[\[\s)?binary.*(jpg|jpeg|png|bmp)/, grp) {
 1
 EOF
 
-choice=$(gawk <<< $cliphist_list "$prog" | wofi -I --dmenu -Dimage_size=100 -Dynamic_lines=true)
+choice=$(gawk <<< $cliphist_list "$prog" | wofi -I --dmenu --cache-file=/dev/null -Dimage_size=100 -Dynamic_lines=true)
 
 # stop execution if nothing selected in wofi menu
 [ -z "$choice" ] && exit 1
