@@ -55,6 +55,7 @@ func main() {
 
 	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
+	minLength := flag.Uint("min-store-length", 0, "minimum number of characters to store")
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
 	dbPath := flag.String("db-path", filepath.Join(cacheHome, "cliphist", "db"), "path to db")
 	configPath := flag.String("config-path", filepath.Join(configHome, "cliphist", "config"), "overwrite config path to use instead of cli flags")
@@ -70,7 +71,7 @@ func main() {
 		case "clear":
 			err = deleteLast(*dbPath)
 		default:
-			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems)
+			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems, *minLength)
 		}
 	case "list":
 		err = list(*dbPath, os.Stdout, *previewWidth)
@@ -97,12 +98,15 @@ func main() {
 	}
 }
 
-func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64) error {
+func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLength uint) error {
 	input, err := io.ReadAll(in)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
 	if len(input) > 5*1e6 { // don't store >5MB
+		return nil
+	}
+	if len([]rune(string(input))) < int(minLength) {
 		return nil
 	}
 
