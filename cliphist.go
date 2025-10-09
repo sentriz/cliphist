@@ -107,7 +107,7 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLen
 	if len(input) > 5*1e6 { // don't store >5MB
 		return nil
 	}
-	if int(minLength) > 0 && graphemeClusterCount(string(input)) > int(minLength) {
+	if int(minLength) > 0 && graphemeClusterCount(string(input)) < int(minLength) {
 		return nil
 	}
 
