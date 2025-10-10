@@ -14,6 +14,22 @@ exec randstr 4
 stdin stdout
 exec cliphist -min-store-length 3 store
 
-# we didn't store the last, 4 > 3
+# we can store the last, since 4 > 3
 exec cliphist list
 stdout -count=3 '^.'
+
+exec randstr 2
+stdin stdout
+exec cliphist -min-store-length 3 store
+
+# not the last, since 4 > 3
+exec cliphist list
+stdout -count=3 '^.'
+
+exec randstr 3
+stdin stdout
+exec cliphist -min-store-length 3 store
+
+# last is fine, 3 == 3
+exec cliphist list
+stdout -count=4 '^.'
