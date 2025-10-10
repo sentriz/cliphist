@@ -16,4 +16,4 @@ exec cliphist -min-store-length 3 store
 
 # we didn't store the last, 4 > 3
 exec cliphist list
-stdout -count=2 '^.'
+stdout -count=3 '^.'
