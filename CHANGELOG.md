@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.0](https://www.github.com/sentriz/cliphist/compare/v0.6.1...v0.7.0) (2025-10-11)
+
+
+### Features
+
+* add `min-store-length` option ([e18c06a](https://www.github.com/sentriz/cliphist/commit/e18c06a316a4c25741d2b3e721c7b4a9ff85390c)), closes [#62](https://www.github.com/sentriz/cliphist/issues/62) [#157](https://www.github.com/sentriz/cliphist/issues/157)
+* compact db after wiping ([9fb195b](https://www.github.com/sentriz/cliphist/commit/9fb195b66d8dfd5950416efdd47f7a62a8d32cd0)), closes [#155](https://www.github.com/sentriz/cliphist/issues/155)
+* **contrib:** add fuzzel img script ([#144](https://www.github.com/sentriz/cliphist/issues/144)) ([9dac7d3](https://www.github.com/sentriz/cliphist/commit/9dac7d3ff533140ad31e835a413a8380b99f96d3))
+* **contrib:** add option to delete specific entry in cliphist-fuzzel-img ([#148](https://www.github.com/sentriz/cliphist/issues/148)) ([ff1d247](https://www.github.com/sentriz/cliphist/commit/ff1d247e3521bd7ebcb6463f86349bab71440496))
+* **contrib:** add systemd service ([#138](https://www.github.com/sentriz/cliphist/issues/138)) ([e626b1b](https://www.github.com/sentriz/cliphist/commit/e626b1b60083453b4ff74f7c8dc251415e2abbc4))
+* **contrib:** cliphist-wofi-img: disable cache ([#156](https://www.github.com/sentriz/cliphist/issues/156)) ([5c33a7d](https://www.github.com/sentriz/cliphist/commit/5c33a7d8d4bb7bf44fe0526d7451edca2157ab75))
+* **contrib:** drop imagemagick in cliphist-fuzzel-img  ([#153](https://www.github.com/sentriz/cliphist/issues/153)) ([6eda526](https://www.github.com/sentriz/cliphist/commit/6eda526d02119ebc09ec0f64b0a96ed4540f5a83))
+* **contrib:** use portable shebang lines ([#147](https://www.github.com/sentriz/cliphist/issues/147)) ([f49bd90](https://www.github.com/sentriz/cliphist/commit/f49bd905cff72d32d62c209224353865436f9a13))
+* support tiff images ([1350191](https://www.github.com/sentriz/cliphist/commit/1350191061a7df1f70cd6e652eb0517d3a9a590f)), closes [#126](https://www.github.com/sentriz/cliphist/issues/126)
+
+
+### Bug Fixes
+
+* error when id not during decode ([b35d005](https://www.github.com/sentriz/cliphist/commit/b35d00590a9fccc4285d562938c5428c9eaa6a37)), closes [#159](https://www.github.com/sentriz/cliphist/issues/159)
+* min-store-length sets max length instead of min ([#163](https://www.github.com/sentriz/cliphist/issues/163)) ([a94f192](https://www.github.com/sentriz/cliphist/commit/a94f192d94e43eee2d58fff6fb3733702eadb854))
+
 ### [0.6.1](https://www.github.com/sentriz/cliphist/compare/v0.6.0...v0.6.1) (2024-10-15)
 
 
