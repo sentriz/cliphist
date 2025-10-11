@@ -2,6 +2,7 @@
 
 ## [0.7.0](https://www.github.com/sentriz/cliphist/compare/v0.6.1...v0.7.0) (2025-10-11)
 
+A small release, mostly featuring the `min-store-length` option.
 
 ### Features
 
