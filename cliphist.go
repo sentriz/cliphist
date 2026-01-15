@@ -59,12 +59,19 @@ func main() {
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
 	minLength := flag.Uint("min-store-length", 0, "minimum number of characters to store")
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
+	maxStoreSizeStr := flag.String("max-store-size", "5MB", "maximum size of clipboard to store (e.g., 5MB, 10MiB, 1GB)")
 	dbPath := flag.String("db-path", filepath.Join(cacheHome, "cliphist", "db"), "path to db")
 	configPath := flag.String("config-path", filepath.Join(configHome, "cliphist", "config"), "overwrite config path to use instead of cli flags")
 
 	flag.Parse()
 	flagconf.ParseEnv()
 	flagconf.ParseConfig(*configPath)
+
+	maxStoreSize, err := parseSize(*maxStoreSizeStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "invalid max-store-size value: %v\n", err)
+		os.Exit(1)
+	}
 
 	switch flag.Arg(0) {
 	case "store":
@@ -73,7 +80,7 @@ func main() {
 		case "clear":
 			err = deleteLast(*dbPath)
 		default:
-			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems, *minLength)
+			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems, *minLength, maxStoreSize)
 		}
 	case "list":
 		err = list(*dbPath, os.Stdout, *previewWidth)
@@ -100,12 +107,12 @@ func main() {
 	}
 }
 
-func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLength uint) error {
+func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLength uint, maxStoreSize uint64) error {
 	input, err := io.ReadAll(in)
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
-	if len(input) > 5*1e6 { // don't store >5MB
+	if maxStoreSize > 0 && uint64(len(input)) > maxStoreSize {
 		return nil
 	}
 	if int(minLength) > 0 && graphemeClusterCount(string(input)) < int(minLength) {
@@ -508,4 +515,50 @@ func sizeStr(size int) string {
 		i++
 	}
 	return fmt.Sprintf("%.0f %s", fsize, units[i])
+}
+
+// parseSize parses a size string like "5MB", "10MiB", "1024" into bytes
+func parseSize(s string) (uint64, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0, fmt.Errorf("empty size string")
+	}
+
+	// Ordered from longest to shortest suffix to avoid partial matches
+	units := []struct {
+		suffix     string
+		multiplier uint64
+	}{
+		{"gib", 1024 * 1024 * 1024},
+		{"mib", 1024 * 1024},
+		{"kib", 1024},
+		{"gb", 1000 * 1000 * 1000},
+		{"mb", 1000 * 1000},
+		{"kb", 1000},
+		{"b", 1},
+	}
+
+	lower := strings.ToLower(s)
+
+	for _, unit := range units {
+		if strings.HasSuffix(lower, unit.suffix) {
+			numStr := s[:len(s)-len(unit.suffix)]
+			numStr = strings.TrimSpace(numStr)
+			num, err := strconv.ParseFloat(numStr, 64)
+			if err != nil {
+				return 0, fmt.Errorf("invalid number: %w", err)
+			}
+			if num < 0 {
+				return 0, fmt.Errorf("size cannot be negative")
+			}
+			return uint64(num * float64(unit.multiplier)), nil
+		}
+	}
+
+	// No unit suffix, treat as bytes
+	num, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid size: %w", err)
+	}
+	return num, nil
 }
