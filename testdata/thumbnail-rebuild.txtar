@@ -1,0 +1,20 @@
+# Test rebuild-thumbnails command
+exec png
+stdin stdout
+exec cliphist store
+
+# verify thumbnail exists
+exists $HOME/cliphist/thumbnails/1.png
+
+# manually delete thumbnail using exec rm
+exec rm $HOME/cliphist/thumbnails/1.png
+
+# verify it's gone
+! exists $HOME/cliphist/thumbnails/1.png
+
+# rebuild thumbnails
+exec cliphist rebuild-thumbnails
+stdout 'generated 1 thumbnails'
+
+# verify it's back
+exists $HOME/cliphist/thumbnails/1.png

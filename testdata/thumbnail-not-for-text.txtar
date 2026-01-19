@@ -1,0 +1,14 @@
+# Test that thumbnails are NOT generated for text entries
+stdin in-text
+exec cliphist store
+
+# check no thumbnail was created
+! exists $HOME/cliphist/thumbnails/1.png
+
+# check list output does NOT include icon path
+exec cliphist list
+! stdout 'icon'
+stdout 'hello world'
+
+-- in-text --
+hello world

@@ -1,0 +1,12 @@
+# Test that thumbnails are generated when storing images
+exec png
+stdin stdout
+exec cliphist store
+
+# check thumbnail was created
+exists $HOME/cliphist/thumbnails/1.png
+
+# check list output includes icon path
+exec cliphist list
+stdout 'icon'
+stdout 'thumbnails/1.png'
