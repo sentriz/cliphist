@@ -1,0 +1,17 @@
+# Test that thumbnails are deleted when entries are deleted
+exec png
+stdin stdout
+exec cliphist store
+
+# verify thumbnail exists
+exists $HOME/cliphist/thumbnails/1.png
+
+# delete the entry
+stdin delete-query
+exec cliphist delete
+
+# check thumbnail was deleted
+! exists $HOME/cliphist/thumbnails/1.png
+
+-- delete-query --
+1	x
