@@ -1,0 +1,20 @@
+# Test that thumbnails are deleted when wipe is called
+exec png
+stdin stdout
+exec cliphist store
+
+# store text to avoid deduplication (png generates same image)
+stdin in-text
+exec cliphist store
+
+# verify thumbnail exists for image entry
+exists $HOME/cliphist/thumbnails/1.png
+
+# wipe all
+exec cliphist wipe
+
+# check thumbnail was wiped
+! exists $HOME/cliphist/thumbnails/1.png
+
+-- in-text --
+some text entry

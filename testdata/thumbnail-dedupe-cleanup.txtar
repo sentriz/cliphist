@@ -1,0 +1,22 @@
+# Test that thumbnails are cleaned up on deduplication
+exec png
+cp stdout image.png
+
+# store same image twice - second should dedupe first
+stdin image.png
+exec cliphist store
+
+# first entry gets id 1
+exists $HOME/cliphist/thumbnails/1.png
+
+stdin image.png
+exec cliphist store
+
+# second entry gets id 2, first should be deduped
+exists $HOME/cliphist/thumbnails/2.png
+! exists $HOME/cliphist/thumbnails/1.png
+
+# only one entry in list
+exec cliphist list
+stdout '2'
+! stdout '^1\t'
