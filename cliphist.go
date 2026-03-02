@@ -22,6 +22,7 @@ import (
 
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/webp"
 
 	"github.com/rivo/uniseg"
 	bolt "go.etcd.io/bbolt"
