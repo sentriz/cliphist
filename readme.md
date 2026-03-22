@@ -45,6 +45,10 @@ Or else query manually:
 
 `$ cliphist wipe`.
 
+#### Compact database
+
+`$ cliphist compact`.
+
 ---
 
 ### Picker examples

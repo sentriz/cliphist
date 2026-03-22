@@ -36,7 +36,7 @@ var version string
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "usage:\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|delete|delete-query|wipe|version>\n", flag.CommandLine.Name())
+		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|delete|delete-query|wipe|compact|version>\n", flag.CommandLine.Name())
 		fmt.Fprintf(flag.CommandLine.Output(), "options:\n")
 		flag.VisitAll(func(f *flag.Flag) {
 			fmt.Fprintf(flag.CommandLine.Output(), "  -%s (default %s)\n", f.Name, f.DefValue)
@@ -92,6 +92,8 @@ func main() {
 		err = delete(*dbPath, os.Stdin)
 	case "wipe":
 		err = wipeAndCompact(*dbPath)
+	case "compact":
+		err = compactDB(*dbPath)
 	case "version":
 		fmt.Fprintf(flag.CommandLine.Output(), "%s\t%s\n", "version", strings.TrimSpace(version))
 		flag.VisitAll(func(f *flag.Flag) {
