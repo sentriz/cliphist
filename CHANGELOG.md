@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0](https://www.github.com/sentriz/cliphist/compare/v0.7.0...v0.8.0) (2026-04-21)
+
+
+### Features
+
+* add compact command ([#174](https://www.github.com/sentriz/cliphist/issues/174)) ([cee6dca](https://www.github.com/sentriz/cliphist/commit/cee6dca8ef4e03ef5dfcf7e2d13ca688ae2116c6))
+* add configurable max clipboard size with max-store-size ([a17fb70](https://www.github.com/sentriz/cliphist/commit/a17fb70fdc5a46917c6125ff49c7624491d6bf82)), closes [#166](https://www.github.com/sentriz/cliphist/issues/166) [#168](https://www.github.com/sentriz/cliphist/issues/168)
+* add support for webp images ([bae528e](https://www.github.com/sentriz/cliphist/commit/bae528ea9fbd9a2b51a71ff2ea0e5ac323ebc542)), closes [#171](https://www.github.com/sentriz/cliphist/issues/171)
+
 ## [0.7.0](https://www.github.com/sentriz/cliphist/compare/v0.6.1...v0.7.0) (2025-10-11)
 
 A small release, mostly featuring the `min-store-length` option.
