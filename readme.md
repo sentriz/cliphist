@@ -154,6 +154,8 @@ cliphist list | fuzzel --dmenu --with-nth 2 | cliphist decode | wl-copy
 cliphist list | wofi --dmenu --pre-display-cmd "echo '%s' | cut -f 2" | cliphist decode | wl-copy
 ```
 
+If you are using ```cliphist-rofi-img```, the ```-display-columns``` flag is not available. Use [contrib/cliphist-rofi-img-no-id](https://github.com/sentriz/cliphist/blob/master/contrib/cliphist-rofi-img-no-id) instead.
+
 </details>
 
 <details>
