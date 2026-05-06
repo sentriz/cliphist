@@ -8,6 +8,7 @@ require (
 	go.etcd.io/bbolt v1.3.9
 	go.senan.xyz/flagconf v0.1.9
 	golang.org/x/image v0.21.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

@@ -27,10 +27,41 @@ import (
 	"github.com/rivo/uniseg"
 	bolt "go.etcd.io/bbolt"
 	"go.senan.xyz/flagconf"
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed version.txt
 var version string
+
+type Config struct {
+    MaxItems         uint64 `yaml:"max-items"`
+    MaxDedupeSearch  uint64 `yaml:"max-dedupe-search"`
+    MinLength        uint   `yaml:"min-store-length"`
+    PreviewWidth     uint   `yaml:"preview-width"`
+    MaxStoreSize     string `yaml:"max-store-size"`
+    DBPath           string `yaml:"db-path"`
+}
+func parseConfigFile(configPath string) (*Config, error) {
+    // Check if config file exists
+    if _, err := os.Stat(configPath); os.IsNotExist(err) {
+        return nil, nil // No config file, that's fine
+    } else if err != nil {
+        return nil, fmt.Errorf("checking config file: %w", err)
+    }
+    
+    // Read and parse YAML file
+    data, err := os.ReadFile(configPath)
+    if err != nil {
+        return nil, fmt.Errorf("reading config file: %w", err)
+    }
+    
+    var cfg Config
+    if err := yaml.Unmarshal(data, &cfg); err != nil {
+        return nil, fmt.Errorf("parsing YAML config: %w", err)
+    }
+    
+    return &cfg, nil
+}
 
 //nolint:errcheck
 func main() {
@@ -54,14 +85,48 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+	
+	configPath := flag.String("config-path", filepath.Join(configHome, "cliphist", "config.yml"), "overwrite config path to use instead of cli flags")
+	cfg, err := parseConfigFile(*configPath)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	defaults := Config{
+		MaxItems:        750,
+		MaxDedupeSearch: 100,
+		MinLength:       0,
+		PreviewWidth:    100,
+		MaxStoreSize:    "5MB",
+		DBPath:          filepath.Join(cacheHome, "cliphist", "db"),
+	};
+	if cfg != nil {
+		if cfg.MaxItems != 0 {
+			defaults.MaxItems = cfg.MaxItems
+		}
+		if cfg.MaxDedupeSearch != 0 {
+			defaults.MaxDedupeSearch = cfg.MaxDedupeSearch
+		}
+		if cfg.MinLength != 0 {
+			defaults.MinLength = cfg.MinLength
+		}
+		if cfg.PreviewWidth != 0 {
+			defaults.PreviewWidth = cfg.PreviewWidth
+		}
+		if cfg.MaxStoreSize != "" {
+			defaults.MaxStoreSize = cfg.MaxStoreSize
+		}
+		if cfg.DBPath != "" {
+			defaults.DBPath = cfg.DBPath
+		}
+	}
 
-	maxItems := flag.Uint64("max-items", 750, "maximum number of items to store")
-	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
-	minLength := flag.Uint("min-store-length", 0, "minimum number of characters to store")
-	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
-	maxStoreSizeStr := flag.String("max-store-size", "5MB", "maximum size of clipboard to store (e.g., 5MB, 10MiB, 1GB)")
-	dbPath := flag.String("db-path", filepath.Join(cacheHome, "cliphist", "db"), "path to db")
-	configPath := flag.String("config-path", filepath.Join(configHome, "cliphist", "config"), "overwrite config path to use instead of cli flags")
+	maxItems := flag.Uint64("max-items", defaults.MaxItems, "maximum number of items to store")
+	maxDedupeSearch := flag.Uint64("max-dedupe-search", defaults.MaxDedupeSearch, "maximum number of last items to look through when finding duplicates")
+	minLength := flag.Uint("min-store-length", defaults.MinLength, "minimum number of characters to store")
+	previewWidth := flag.Uint("preview-width", defaults.PreviewWidth, "maximum number of characters to preview")
+	maxStoreSizeStr := flag.String("max-store-size", defaults.MaxStoreSize, "maximum size of clipboard to store (e.g., 5MB, 10MiB, 1GB)")
+	dbPath := flag.String("db-path", defaults.DBPath, "path to db")
 
 	flag.Parse()
 	flagconf.ParseEnv()
