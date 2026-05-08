@@ -35,9 +35,19 @@ var version string
 //nolint:errcheck
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "usage:\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|delete|delete-query|wipe|compact|version>\n", flag.CommandLine.Name())
-		fmt.Fprintf(flag.CommandLine.Output(), "options:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  %s <command> [arguments]\n", flag.CommandLine.Name())
+		fmt.Fprintf(flag.CommandLine.Output(), "\nCommands:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  store           read clipboard content from stdin and store it (deduplicates, respects size/length limits)\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  list            list all stored clipboard items with previews\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  decode [id]     decode and print the full content for the given ID (or read ID from stdin)\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  delete-query    delete all entries containing a substring (query argument required)\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  delete          delete entries by reading IDs from stdin (one per line)\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  wipe            remove all entries and compact the database\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  compact         compact the database to reclaim space without deleting entries\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  version         print version and current flag values\n")
+
+		fmt.Fprintf(flag.CommandLine.Output(), "\nOptions:\n")
 		flag.VisitAll(func(f *flag.Flag) {
 			fmt.Fprintf(flag.CommandLine.Output(), "  -%s (default %s)\n", f.Name, f.DefValue)
 			fmt.Fprintf(flag.CommandLine.Output(), "    %s\n", f.Usage)
