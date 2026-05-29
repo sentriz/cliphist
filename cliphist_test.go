@@ -52,10 +52,10 @@ func TestMain(m *testing.M) {
 
 func TestStoreMaxSize(t *testing.T) {
 	tests := []struct {
-		name        string
-		inputSize   int
+		name         string
+		inputSize    int
 		maxStoreSize uint64
-		shouldStore bool
+		shouldStore  bool
 	}{
 		// Under limit: should store
 		{"under limit", 100, 1000, true},
@@ -92,7 +92,7 @@ func TestStoreMaxSize(t *testing.T) {
 			}
 
 			// Execute store
-			err = store(dbPath, bytes.NewReader(input), 100, 750, 0, tt.maxStoreSize)
+			err = store(dbPath, bytes.NewReader(input), 100, 750, 0, tt.maxStoreSize, true)
 			if err != nil {
 				t.Fatalf("store failed: %v", err)
 			}

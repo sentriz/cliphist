@@ -61,6 +61,7 @@ func main() {
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
 	maxStoreSizeStr := flag.String("max-store-size", "5MB", "maximum size of clipboard to store (e.g., 5MB, 10MiB, 1GB)")
 	dbPath := flag.String("db-path", filepath.Join(cacheHome, "cliphist", "db"), "path to db")
+	timeStamp := flag.Bool("time-stamp", false, "Adds a time stamp to the stored data")
 	configPath := flag.String("config-path", filepath.Join(configHome, "cliphist", "config"), "overwrite config path to use instead of cli flags")
 
 	flag.Parse()
@@ -80,7 +81,7 @@ func main() {
 		case "clear":
 			err = deleteLast(*dbPath)
 		default:
-			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems, *minLength, maxStoreSize)
+			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems, *minLength, maxStoreSize, *timeStamp)
 		}
 	case "list":
 		err = list(*dbPath, os.Stdout, *previewWidth)
@@ -109,8 +110,28 @@ func main() {
 	}
 }
 
-func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLength uint, maxStoreSize uint64) error {
+func getCurrentTime() string {
+	timeStamped := strings.Join(
+		[]string{
+			time.Now().Format(time.DateTime),
+			fieldSep,
+		}, "")
+	return timeStamped
+}
+func timeStamped(input []byte) []byte {
+	timeStampedInput := getCurrentTime()
+	result := append([]byte(timeStampedInput), input...)
+	return result
+}
+
+func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLength uint, maxStoreSize uint64, timeStamp bool) error {
 	input, err := io.ReadAll(in)
+	if timeStamp {
+		if maxStoreSize != 0 {
+			maxStoreSize += uint64(len([]byte(getCurrentTime())))
+		}
+		input = timeStamped(input)
+	}
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
