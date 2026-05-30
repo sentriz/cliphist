@@ -118,20 +118,9 @@ func getCurrentTime() string {
 		}, "")
 	return timeStamped
 }
-func timeStamped(input []byte) []byte {
-	timeStampedInput := getCurrentTime()
-	result := append([]byte(timeStampedInput), input...)
-	return result
-}
 
 func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLength uint, maxStoreSize uint64, timeStamp bool) error {
 	input, err := io.ReadAll(in)
-	if timeStamp {
-		if maxStoreSize != 0 {
-			maxStoreSize += uint64(len([]byte(getCurrentTime())))
-		}
-		input = timeStamped(input)
-	}
 	if err != nil {
 		return fmt.Errorf("read stdin: %w", err)
 	}
@@ -150,6 +139,13 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLen
 
 	if len(bytes.TrimSpace(input)) == 0 {
 		return nil
+	}
+	if timeStamp {
+		if maxStoreSize != 0 {
+			maxStoreSize += uint64(len([]byte(getCurrentTime())))
+		}
+		timeStampedInput := getCurrentTime()
+		input = append([]byte(timeStampedInput), input...)
 	}
 	tx, err := db.Begin(true)
 	if err != nil {
