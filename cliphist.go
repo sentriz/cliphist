@@ -409,7 +409,7 @@ func initDBOption(path string, ro bool) (*bolt.DB, error) {
 		}
 	}
 
-	db, err := bolt.Open(path, 0644, &bolt.Options{
+	db, err := bolt.Open(path, 0600, &bolt.Options{
 		ReadOnly: ro,
 		Timeout:  1 * time.Second,
 	})
@@ -430,7 +430,7 @@ func initDBOption(path string, ro bool) (*bolt.DB, error) {
 }
 
 func compactDB(path string) error {
-	srcDB, err := bolt.Open(path, 0644, &bolt.Options{
+	srcDB, err := bolt.Open(path, 0600, &bolt.Options{
 		ReadOnly: true,
 		Timeout:  1 * time.Second,
 	})
@@ -440,7 +440,7 @@ func compactDB(path string) error {
 	defer srcDB.Close()
 
 	tmpPath := path + ".tmp"
-	dstDB, err := bolt.Open(tmpPath, 0644, &bolt.Options{
+	dstDB, err := bolt.Open(tmpPath, 0600, &bolt.Options{
 		Timeout: 1 * time.Second,
 	})
 	if err != nil {
