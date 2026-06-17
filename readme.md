@@ -26,28 +26,50 @@ Requires [Go](https://golang.org/), [wl-clipboard](https://github.com/bugaevc/wl
 
 #### Listen for clipboard changes
 
-`$ wl-paste --watch cliphist store`  
+```bash
+$ wl-paste --watch cliphist store
+```
+
 This will listen for changes on your primary clipboard and write them to the history.  
 Call it once per session - for example, in your Sway config.
 
 #### Select an old item
 
-`$ cliphist list | dmenu | cliphist decode | wl-copy`  
 Bind it to something nice on your keyboard.
+
+```bash
+$ cliphist list | dmenu | cliphist decode | wl-copy
+```
 
 #### Delete an old item
 
-`$ cliphist list | dmenu | cliphist delete`  
+Delete the item you select in the picker:
+
+```bash
+$ cliphist list | dmenu | cliphist delete
+```
+
 Or else query manually:
-`$ cliphist delete-query "secret item"`.
+Deletes all entries containing the given substring.
+
+```bash
+$ cliphist delete-query "secret item"
+```
 
 #### Clear database
 
-`$ cliphist wipe`.
+Removes all entries and compacts the database in one step.
+
+```bash
+$ cliphist wipe
+```
 
 #### Compact database
+Removes all deleted entries and compacts the database in one step.
 
-`$ cliphist compact`.
+```bash
+$ cliphist compact
+```
 
 ---
 
