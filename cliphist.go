@@ -32,11 +32,16 @@ import (
 //go:embed version.txt
 var version string
 
+const (
+	typeText byte = iota
+	typeBinary
+)
+
 //nolint:errcheck
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "usage:\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|delete|delete-query|wipe|compact|version>\n", flag.CommandLine.Name())
+		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|type|decode|delete|delete-query|wipe|compact|version>\n", flag.CommandLine.Name())
 		fmt.Fprintf(flag.CommandLine.Output(), "options:\n")
 		flag.VisitAll(func(f *flag.Flag) {
 			fmt.Fprintf(flag.CommandLine.Output(), "  -%s (default %s)\n", f.Name, f.DefValue)
@@ -84,6 +89,8 @@ func main() {
 		}
 	case "list":
 		err = list(*dbPath, os.Stdout, *previewWidth)
+	case "type":
+		err = typeOf(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
 	case "decode":
 		err = decode(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
 	case "delete-query":
@@ -138,6 +145,11 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLen
 
 	b := tx.Bucket([]byte(bucketKey))
 
+	t := typeText
+	if _, _, err := image.DecodeConfig(bytes.NewReader(input)); err == nil {
+		t = typeBinary
+	}
+	input = append([]byte{t}, input...)
 	if err := deduplicate(b, input, maxDedupeSearch); err != nil {
 		return fmt.Errorf("deduplicating: %w", err)
 	}
@@ -231,6 +243,46 @@ func extractID(input string) (uint64, error) {
 	return uint64(id), nil
 }
 
+func typeOf(dbPath string, in io.Reader, out io.Writer, input string) error {
+	if input == "" {
+		inp, err := io.ReadAll(in)
+		if err != nil {
+			return fmt.Errorf("read stdin: %w", err)
+		}
+		input = string(inp)
+	}
+	id, err := extractID(input)
+	if err != nil {
+		return fmt.Errorf("extracting id: %w", err)
+	}
+
+	db, err := initDBReadOnly(dbPath)
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin(false)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	b := tx.Bucket([]byte(bucketKey))
+	v := b.Get(itob(id))
+	if v == nil {
+		return fmt.Errorf("id %d not found", id)
+	}
+
+	if v[0] == typeText {
+		io.WriteString(out, "text")
+	} else {
+		io.WriteString(out, "binary")
+	}
+
+	return err
+}
+
 func decode(dbPath string, in io.Reader, out io.Writer, input string) error {
 	if input == "" {
 		inp, err := io.ReadAll(in)
@@ -262,7 +314,7 @@ func decode(dbPath string, in io.Reader, out io.Writer, input string) error {
 		return fmt.Errorf("id %d not found", id)
 	}
 
-	if _, err := out.Write(v); err != nil {
+	if _, err := out.Write(v[1:]); err != nil {
 		return fmt.Errorf("writing out: %w", err)
 	}
 	return nil
@@ -467,11 +519,16 @@ func compactDB(path string) error {
 }
 
 func preview(index uint64, data []byte, width uint) string {
-	if config, format, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
-		return fmt.Sprintf("%d%s[[ binary data %s %s %dx%d ]]",
-			index, fieldSep, sizeStr(len(data)), format, config.Width, config.Height)
+	t := data[0]
+	payload := data[1:]
+
+	if t == typeBinary {
+		if config, format, err := image.DecodeConfig(bytes.NewReader(payload)); err == nil {
+			return fmt.Sprintf("%d%s[[ binary data %s %s %dx%d ]]",
+				index, fieldSep, sizeStr(len(payload)), format, config.Width, config.Height)
+		}
 	}
-	prev := string(data)
+	prev := string(payload)
 	prev = strings.TrimSpace(prev)
 	prev = strings.Join(strings.Fields(prev), " ")
 	prev = trunc(prev, int(width), "…")
