@@ -53,7 +53,7 @@ Or else query manually:
 
 `cliphist timestamp` and `cliphist mimetype` accept the same `<id>\t<preview>`
 input as `decode`, and return the item's unix timestamp or content type
-(`text`/`image`) respectively.
+(`text`/`binary`) respectively.
 
 ---
 
