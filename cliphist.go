@@ -36,7 +36,7 @@ var version string
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "usage:\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|delete|delete-query|wipe|compact|version>\n", flag.CommandLine.Name())
+		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|timestamp|mimetype|delete|delete-query|wipe|compact|version>\n", flag.CommandLine.Name())
 		fmt.Fprintf(flag.CommandLine.Output(), "options:\n")
 		flag.VisitAll(func(f *flag.Flag) {
 			fmt.Fprintf(flag.CommandLine.Output(), "  -%s (default %s)\n", f.Name, f.DefValue)
@@ -86,6 +86,10 @@ func main() {
 		err = list(*dbPath, os.Stdout, *previewWidth)
 	case "decode":
 		err = decode(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
+	case "timestamp":
+		err = timestamp(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
+	case "mimetype":
+		err = mimetype(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
 	case "delete-query":
 		err = deleteQuery(*dbPath, flag.Arg(1))
 	case "delete":
@@ -137,8 +141,9 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLen
 	defer tx.Rollback() //nolint:errcheck
 
 	b := tx.Bucket([]byte(bucketKey))
+	mb := tx.Bucket([]byte(metaBucketKey))
 
-	if err := deduplicate(b, input, maxDedupeSearch); err != nil {
+	if err := deduplicate(b, mb, input, maxDedupeSearch); err != nil {
 		return fmt.Errorf("deduplicating: %w", err)
 	}
 	id, err := b.NextSequence()
@@ -148,7 +153,14 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLen
 	if err := b.Put(itob(id), input); err != nil {
 		return fmt.Errorf("insert stdin: %w", err)
 	}
-	if err := trimLength(b, maxItems); err != nil {
+
+	_, _, decodeErr := image.DecodeConfig(bytes.NewReader(input))
+	meta := encodeMeta(time.Now().Unix(), decodeErr == nil)
+	if err := mb.Put(itob(id), meta); err != nil {
+		return fmt.Errorf("insert metadata: %w", err)
+	}
+
+	if err := trimLength(b, mb, maxItems); err != nil {
 		return fmt.Errorf("trimming length: %w", err)
 	}
 
@@ -161,7 +173,7 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLen
 // trim the store's size to a number of max items. manually counting
 // seen items because we can't rely on sequence numbers when items can
 // be deleted when deduplicating
-func trimLength(b *bolt.Bucket, maxItems uint64) error {
+func trimLength(b *bolt.Bucket, mb *bolt.Bucket, maxItems uint64) error {
 	c := b.Cursor()
 	var seen uint64
 	for k, _ := c.Last(); k != nil; k, _ = c.Prev() {
@@ -172,12 +184,15 @@ func trimLength(b *bolt.Bucket, maxItems uint64) error {
 		if err := b.Delete(k); err != nil {
 			return fmt.Errorf("delete :%w", err)
 		}
+		if err := mb.Delete(k); err != nil {
+			return fmt.Errorf("delete meta: %w", err)
+		}
 		seen++
 	}
 	return nil
 }
 
-func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
+func deduplicate(b *bolt.Bucket, mb *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 	c := b.Cursor()
 	var seen uint64
 	for k, v := c.Last(); k != nil; k, v = c.Prev() {
@@ -190,6 +205,9 @@ func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 		}
 		if err := b.Delete(k); err != nil {
 			return fmt.Errorf("delete :%w", err)
+		}
+		if err := mb.Delete(k); err != nil {
+			return fmt.Errorf("delete meta: %w", err)
 		}
 		seen++
 	}
@@ -268,6 +286,95 @@ func decode(dbPath string, in io.Reader, out io.Writer, input string) error {
 	return nil
 }
 
+func timestamp(dbPath string, in io.Reader, out io.Writer, input string) error {
+	if input == "" {
+		inp, err := io.ReadAll(in)
+		if err != nil {
+			return fmt.Errorf("read stdin: %w", err)
+		}
+		input = string(inp)
+	}
+	id, err := extractID(input)
+	if err != nil {
+		return fmt.Errorf("extracting id: %w", err)
+	}
+
+	db, err := initDBReadOnly(dbPath)
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin(false)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	mb := tx.Bucket([]byte(metaBucketKey))
+	raw := mb.Get(itob(id))
+	if raw == nil {
+		return fmt.Errorf("metadata for id %d not found", id)
+	}
+
+	ts, _ := decodeMeta(raw)
+
+	if _, err := fmt.Fprintln(out, ts); err != nil {
+		return fmt.Errorf("writing out: %w", err)
+	}
+	return nil
+}
+
+func mimetype(dbPath string, in io.Reader, out io.Writer, input string) error {
+	if input == "" {
+		inp, err := io.ReadAll(in)
+		if err != nil {
+			return fmt.Errorf("read stdin: %w", err)
+		}
+		input = string(inp)
+	}
+	id, err := extractID(input)
+	if err != nil {
+		return fmt.Errorf("extracting id: %w", err)
+	}
+
+	db, err := initDBReadOnly(dbPath)
+	if err != nil {
+		return fmt.Errorf("opening db: %w", err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin(false)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	mb := tx.Bucket([]byte(metaBucketKey))
+	var mt bool
+	if raw := mb.Get(itob(id)); raw != nil {
+		_, mt = decodeMeta(raw)
+	} else {
+		// Fallback to image decoding
+		b := tx.Bucket([]byte(bucketKey))
+		v := b.Get(itob(id))
+		if v == nil {
+			return fmt.Errorf("id %d not found", id)
+		}
+		_, _, derr := image.DecodeConfig(bytes.NewReader(v))
+		mt = derr == nil
+	}
+
+	result := "text"
+	if mt {
+		result = "binary"
+	}
+	if _, err := fmt.Fprintln(out, result); err != nil {
+		return fmt.Errorf("writing out: %w", err)
+	}
+	return nil
+}
+
 func deleteQuery(dbPath string, query string) error {
 	if query == "" {
 		return fmt.Errorf("please provide a query")
@@ -286,10 +393,12 @@ func deleteQuery(dbPath string, query string) error {
 	defer tx.Rollback() //nolint:errcheck
 
 	b := tx.Bucket([]byte(bucketKey))
+	mb := tx.Bucket([]byte(metaBucketKey))
 	c := b.Cursor()
 	for k, v := c.First(); k != nil; k, v = c.Next() {
 		if bytes.Contains(v, []byte(query)) {
 			_ = b.Delete(k)
+			_ = mb.Delete(k)
 		}
 	}
 
@@ -313,9 +422,11 @@ func deleteLast(dbPath string) error {
 	defer tx.Rollback() //nolint:errcheck
 
 	b := tx.Bucket([]byte(bucketKey))
+	mb := tx.Bucket([]byte(metaBucketKey))
 	c := b.Cursor()
 	k, _ := c.Last()
 	_ = b.Delete(k)
+	_ = mb.Delete(k)
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
@@ -346,8 +457,12 @@ func delete(dbPath string, in io.Reader) error {
 			return fmt.Errorf("extract id: %w", err)
 		}
 		b := tx.Bucket([]byte(bucketKey))
+		mb := tx.Bucket([]byte(metaBucketKey))
 		if err := b.Delete(itob(id)); err != nil {
 			return fmt.Errorf("delete key: %w", err)
+		}
+		if err := mb.Delete(itob(id)); err != nil {
+			return fmt.Errorf("delete meta key: %w", err)
 		}
 	}
 
@@ -381,9 +496,11 @@ func wipe(dbPath string) error {
 	defer tx.Rollback() //nolint:errcheck
 
 	b := tx.Bucket([]byte(bucketKey))
+	mb := tx.Bucket([]byte(metaBucketKey))
 	c := b.Cursor()
 	for k, _ := c.First(); k != nil; k, _ = c.Next() {
 		_ = b.Delete(k)
+		_ = mb.Delete(k)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -393,6 +510,7 @@ func wipe(dbPath string) error {
 }
 
 const bucketKey = "b"
+const metaBucketKey = "m"
 
 func initDB(path string) (*bolt.DB, error)         { return initDBOption(path, false) }
 func initDBReadOnly(path string) (*bolt.DB, error) { return initDBOption(path, true) }
@@ -420,7 +538,10 @@ func initDBOption(path string, ro bool) (*bolt.DB, error) {
 		return db, nil
 	}
 	err = db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucketKey))
+		if _, err := tx.CreateBucketIfNotExists([]byte(bucketKey)); err != nil {
+			return err
+		}
+		_, err := tx.CreateBucketIfNotExists([]byte(metaBucketKey))
 		return err
 	})
 	if err != nil {
@@ -563,4 +684,20 @@ func parseSize(s string) (uint64, error) {
 		return 0, fmt.Errorf("invalid size: %w", err)
 	}
 	return num, nil
+}
+
+func encodeMeta(timestamp int64, mimetype bool) []byte {
+	buf := make([]byte, 9)
+	if mimetype {
+		buf[0] = 1
+	}
+
+	binary.BigEndian.PutUint64(buf[1:], uint64(timestamp))
+	return buf
+}
+
+func decodeMeta(raw []byte) (timestamp int64, mimetype bool) {
+	mimetype = raw[0] == 1
+	timestamp = int64(binary.BigEndian.Uint64(raw[1:]))
+	return
 }
