@@ -126,7 +126,7 @@ Requires [contrib/cliphist-fzf-sixel](./contrib/cliphist-fzf-sixel), chafa, and 
 <details>
 <summary>cmenu</summary>
 
-[cmenu](https://github.com/sentriz/cmenu) runs the script itself, so instead of a pipe you give it a script that prints the list, and gets the selected line back. See [menu-clipboard](https://github.com/sentriz/dotfiles/blob/508a0c36/laptop/.local/bin/laptop/menus/menu-clipboard) for an example.
+[cmenu](https://github.com/sentriz/cmenu) runs the script itself, so instead of a pipe you give it a script that prints the list, and gets the selected line back. See [menu-clipboard](https://github.com/sentriz/dotfiles/blob/72540189ef6692e355c8f7f5c7b9e589cb907153/laptop/.local/bin/laptop/menus/menu-clipboard) for an example.
 
 </details>
 
