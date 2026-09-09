@@ -1,0 +1,109 @@
+exec cliphist list -h
+! stdout .
+stderr '^Usage of list:'
+stderr '\-fields'
+
+! exec cliphist list -fields invalid
+stderr 'unknown field "invalid"'
+! exec cliphist list -fields ''
+stderr 'unknown field ""'
+! exec cliphist list -fields id,,mime
+stderr 'unknown field ""'
+! exec cliphist list -unknown
+stderr 'flag provided but not defined'
+! exec cliphist list 1 2
+stderr 'list accepts at most one id'
+! exec cliphist list invalid
+stderr 'converting id'
+! exec cliphist list -- -1
+stderr 'converting id'
+! exec cliphist list 18446744073709551616
+stderr 'converting id'
+! exec cliphist -fields mime list
+stderr 'flag provided but not defined'
+
+stdin text
+exec cliphist store
+
+env CLIPBOARD_TYPE='text/plain; charset=utf-8'
+stdin text
+exec cliphist store
+
+env CLIPBOARD_TYPE=text/uri-list
+stdin text
+exec cliphist store
+
+exec cliphist list
+cmp stdout default
+exec cliphist list -fields id,mime,preview
+cmp stdout fields
+exec cliphist list -fields mime,id
+cmp stdout reordered
+exec cliphist list -fields id,timestamp
+stdout -count=3 '^[123]\t[0-9]{10,}$'
+exec cliphist list -fields mime 2
+stdout '^text/plain; charset=utf-8$'
+exec cliphist list -fields mime 1
+cmp stdout empty-field
+exec cliphist list -fields id,preview 2
+stdout '^2\thello world$'
+exec cliphist list -fields preview,preview 1
+stdout '^hello world\thello world$'
+! exec cliphist list -fields id 18446744073709551615
+stderr 'id 18446744073709551615 not found'
+! exec cliphist list -fields mime 0
+stderr 'id 0 not found'
+! exec cliphist list -fields mime 4
+stderr 'id 4 not found'
+
+exec cliphist list -fields id 2
+stdin stdout
+exec cliphist decode
+cmp stdout text
+exec cliphist list -fields id,mime,preview 3
+stdin stdout
+exec cliphist decode
+cmp stdout text
+exec cliphist list -fields id 3
+stdin stdout
+exec cliphist delete
+! exec cliphist list 3
+stderr 'id 3 not found'
+
+exec cliphist -db-path $WORK/cliphist/db list -fields mime 2
+stdout '^text/plain; charset=utf-8$'
+exec cliphist -preview-width 5 list -fields preview 2
+stdout '^hello…$'
+env CLIPHIST_PREVIEW_WIDTH=4
+exec cliphist list -fields preview 2
+stdout '^hell…$'
+env CLIPHIST_PREVIEW_WIDTH=
+env CLIPHIST_FIELDS=mime
+env LIST_FIELDS=mime
+exec cliphist -config-path conf list
+cmp stdout configured
+exec cliphist -config-path conf list -fields mime 2
+stdout '^text/plain; charset=utf-8$'
+
+-- empty-field --
+
+-- conf --
+fields mime
+preview-width 5
+-- configured --
+2	hello…
+1	hello…
+-- text --
+hello	world
+-- default --
+3	hello world
+2	hello world
+1	hello world
+-- fields --
+3	text/uri-list	hello world
+2	text/plain; charset=utf-8	hello world
+1		hello world
+-- reordered --
+text/uri-list	3
+text/plain; charset=utf-8	2
+	1

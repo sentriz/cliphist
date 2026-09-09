@@ -52,10 +52,10 @@ func TestMain(m *testing.M) {
 
 func TestStoreMaxSize(t *testing.T) {
 	tests := []struct {
-		name        string
-		inputSize   int
+		name         string
+		inputSize    int
 		maxStoreSize uint64
-		shouldStore bool
+		shouldStore  bool
 	}{
 		// Under limit: should store
 		{"under limit", 100, 1000, true},
@@ -99,7 +99,7 @@ func TestStoreMaxSize(t *testing.T) {
 
 			// Verify if it was stored
 			var output bytes.Buffer
-			err = list(dbPath, &output, 100)
+			err = list(dbPath, &output, 100, []string{"id", "preview"}, "")
 
 			if tt.shouldStore {
 				if err != nil {
@@ -185,6 +185,8 @@ func TestScripts(t *testing.T) {
 		Setup: func(env *testscript.Env) error {
 			env.Vars = append(env.Vars, fmt.Sprintf("HOME=%s", env.WorkDir))
 			env.Vars = append(env.Vars, fmt.Sprintf("XDG_CACHE_HOME=%s", env.WorkDir))
+			env.Vars = append(env.Vars, fmt.Sprintf("XDG_CONFIG_HOME=%s", env.WorkDir))
+			env.Vars = append(env.Vars, "CLIPBOARD_TYPE=", "CLIPBOARD_STATE=")
 			return nil
 		},
 	})

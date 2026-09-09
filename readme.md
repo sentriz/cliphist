@@ -10,7 +10,7 @@ _Clipboard history “manager” for Wayland_
   - Won’t break fancy editor selections like Vim wordwise, linewise, or block mode.
 - No concept of a picker, only pipes.
 
-Requires [Go](https://golang.org/), [wl-clipboard](https://github.com/bugaevc/wl-clipboard), xdg-utils (for image MIME inference).
+Requires [Go](https://golang.org/), [wl-clipboard](https://github.com/bugaevc/wl-clipboard), and xdg-utils (for MIME inference by `wl-copy` when no type is supplied).
 
 ---
 
@@ -30,16 +30,40 @@ Requires [Go](https://golang.org/), [wl-clipboard](https://github.com/bugaevc/wl
 This will listen for changes on your primary clipboard and write them to the history.  
 Call it once per session - for example, in your Sway config.
 
+`store` reads `CLIPBOARD_TYPE` from `wl-paste --watch` (requires [wl-clipboard PR #297](https://github.com/bugaevc/wl-clipboard/pull/297), merged after v2.3.0). Older wl-clipboard versions leave MIME types unknown.
+
 #### Select an old item
 
 `$ cliphist list | dmenu | cliphist decode | wl-copy`  
 Bind it to something nice on your keyboard.
+
+#### List metadata
+
+```shell
+cliphist list -fields id,mime,preview
+cliphist list -fields id,timestamp
+cliphist list -fields mime 123
+cliphist -db-path /some/db list -fields id,timestamp
+cliphist list -h
+```
+
+`list` emits TSV without a header, newest first. `-fields` selects columns in the requested order; the default is `id,preview`. An optional ID selects one entry. Unknown fields and missing IDs are errors.
 
 #### Delete an old item
 
 `$ cliphist list | dmenu | cliphist delete`  
 Or else query manually:
 `$ cliphist delete-query "secret item"`.
+
+#### Expire old entries
+
+Run this from an external timer to delete entries older than 30 days:
+
+```shell
+cliphist list -fields id,timestamp | awk -F '\t' -v now="$(date +%s)" '$2 != "" && $2 < now - 30*24*60*60 { print $1 }' | cliphist delete
+```
+
+Entries with unknown timestamps are left untouched.
 
 #### Clear database
 
@@ -64,6 +88,15 @@ Or else query manually:
 <summary>fzf</summary>
 
 `cliphist list | fzf --no-sort | cliphist decode | wl-copy`
+
+</details>
+
+<details>
+<summary>fzf (sixel image previews)</summary>
+
+`./cliphist-fzf-sixel`
+
+Requires [contrib/cliphist-fzf-sixel](./contrib/cliphist-fzf-sixel), chafa, and a sixel-capable terminal. Uses MIME metadata for image previews and restoration, with preview-text detection as a fallback for entries without a known type.
 
 </details>
 
@@ -195,7 +228,7 @@ Now you should have text and raw image data available in your history. Make sure
 
 ### Configuration
 
-`cliphist` can be optionally configured to extend the default functionality. Any option can be provided with a CLI argument, environment variable, or config file key.
+`cliphist` can be optionally configured to extend the default functionality. Global options can be provided with a CLI argument, environment variable, or config file key. Global CLI flags go before the command. The command-local `list -fields` flag is CLI-only; environment variables and config keys cannot change the output fields.
 
 For example, the option `max-items`, can be set via the CLI as `-max-items 100`, as an environment variable `CLIPHIST_MAX_ITEMS=100`, or in the config file as `max-items 100`.
 

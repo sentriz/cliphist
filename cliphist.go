@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -35,13 +36,13 @@ var version string
 //nolint:errcheck
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "usage:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage:\n")
 		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|delete|delete-query|wipe|compact|version>\n", flag.CommandLine.Name())
-		fmt.Fprintf(flag.CommandLine.Output(), "options:\n")
-		flag.VisitAll(func(f *flag.Flag) {
-			fmt.Fprintf(flag.CommandLine.Output(), "  -%s (default %s)\n", f.Name, f.DefValue)
-			fmt.Fprintf(flag.CommandLine.Output(), "    %s\n", f.Usage)
-		})
+		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s [options] list [-fields <fields>] [id]\n", flag.CommandLine.Name())
+		fmt.Fprintf(flag.CommandLine.Output(), "\nOptions:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(flag.CommandLine.Output(), "\nSee also:\n")
+		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s list -h\n", flag.CommandLine.Name())
 	}
 
 	cacheHome, err := os.UserCacheDir()
@@ -73,7 +74,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	switch flag.Arg(0) {
+	if flag.NArg() == 0 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	switch command, args := flag.Arg(0), flag.Args()[1:]; command {
 	case "store":
 		switch os.Getenv("CLIPBOARD_STATE") { // from man wl-clipboard
 		case "sensitive":
@@ -83,7 +89,14 @@ func main() {
 			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems, *minLength, maxStoreSize)
 		}
 	case "list":
-		err = list(*dbPath, os.Stdout, *previewWidth)
+		flag := flag.NewFlagSet(command, flag.ExitOnError)
+		fields := flag.String("fields", "id,preview", "comma separated fields (id, preview, timestamp, mime) keep id first for decode or delete")
+		flag.Parse(args)
+		if flag.NArg() > 1 {
+			err = errors.New("list accepts at most one id")
+			break
+		}
+		err = list(*dbPath, os.Stdout, *previewWidth, strings.Split(*fields, ","), flag.Arg(0))
 	case "decode":
 		err = decode(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
 	case "delete-query":
@@ -136,9 +149,19 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLen
 	}
 	defer tx.Rollback() //nolint:errcheck
 
+	metadata := entryMetadata{
+		Timestamp: time.Now().Unix(),
+		MIME:      os.Getenv("CLIPBOARD_TYPE"),
+		Image:     decodeImageMetadata(input),
+	}
+	encoded, err := json.Marshal(metadata)
+	if err != nil {
+		return fmt.Errorf("encode metadata: %w", err)
+	}
+	mb := tx.Bucket([]byte(metadataBucketKey))
 	b := tx.Bucket([]byte(bucketKey))
 
-	if err := deduplicate(b, input, maxDedupeSearch); err != nil {
+	if err := deduplicate(b, input, metadata.MIME, maxDedupeSearch); err != nil {
 		return fmt.Errorf("deduplicating: %w", err)
 	}
 	id, err := b.NextSequence()
@@ -147,6 +170,9 @@ func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLen
 	}
 	if err := b.Put(itob(id), input); err != nil {
 		return fmt.Errorf("insert stdin: %w", err)
+	}
+	if err := mb.Put(itob(id), encoded); err != nil {
+		return fmt.Errorf("insert metadata: %w", err)
 	}
 	if err := trimLength(b, maxItems); err != nil {
 		return fmt.Errorf("trimming length: %w", err)
@@ -169,15 +195,15 @@ func trimLength(b *bolt.Bucket, maxItems uint64) error {
 			seen++
 			continue
 		}
-		if err := b.Delete(k); err != nil {
-			return fmt.Errorf("delete :%w", err)
+		if err := deleteEntry(b.Tx(), k); err != nil {
+			return err
 		}
 		seen++
 	}
 	return nil
 }
 
-func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
+func deduplicate(b *bolt.Bucket, input []byte, mimeType string, maxDedupeSearch uint64) error {
 	c := b.Cursor()
 	var seen uint64
 	for k, v := c.Last(); k != nil; k, v = c.Prev() {
@@ -188,15 +214,39 @@ func deduplicate(b *bolt.Bucket, input []byte, maxDedupeSearch uint64) error {
 			seen++
 			continue
 		}
-		if err := b.Delete(k); err != nil {
-			return fmt.Errorf("delete :%w", err)
+		metadata, err := compatReadMetadata(b.Tx(), k, v)
+		if err != nil {
+			return err
+		}
+		if metadata.MIME == mimeType {
+			if err := deleteEntry(b.Tx(), k); err != nil {
+				return err
+			}
 		}
 		seen++
 	}
 	return nil
 }
 
-func list(dbPath string, out io.Writer, previewWidth uint) error {
+func list(dbPath string, out io.Writer, previewWidth uint, fields []string, input string) error {
+	if len(fields) == 0 {
+		return errors.New("please provide at least one field")
+	}
+	for _, field := range fields {
+		switch field {
+		case "id", "preview", "timestamp", "mime":
+		default:
+			return fmt.Errorf("unknown field %q", field)
+		}
+	}
+	var id uint64
+	if input != "" {
+		var err error
+		id, err = strconv.ParseUint(input, 10, 64)
+		if err != nil {
+			return fmt.Errorf("converting id: %w", err)
+		}
+	}
 	db, err := initDBReadOnly(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
@@ -210,9 +260,45 @@ func list(dbPath string, out io.Writer, previewWidth uint) error {
 	defer tx.Rollback() //nolint:errcheck
 
 	b := tx.Bucket([]byte(bucketKey))
+	if input != "" && (b == nil || b.Get(itob(id)) == nil) {
+		return fmt.Errorf("id %d not found", id)
+	}
+	if b == nil {
+		return nil
+	}
 	c := b.Cursor()
-	for k, v := c.Last(); k != nil; k, v = c.Prev() {
-		fmt.Fprintln(out, preview(btoi(k), v, previewWidth))
+	k, v := c.Last()
+	if input != "" {
+		k, v = c.Seek(itob(id))
+	}
+	for ; k != nil; k, v = c.Prev() {
+		metadata, err := compatReadMetadata(tx, k, v)
+		if err != nil {
+			return err
+		}
+		values := make([]string, 0, len(fields))
+		for _, field := range fields {
+			var value string
+			switch field {
+			case "id":
+				value = strconv.FormatUint(btoi(k), 10)
+			case "preview":
+				value = preview(v, metadata, previewWidth)
+			case "timestamp":
+				if metadata.Timestamp != 0 {
+					value = strconv.FormatInt(metadata.Timestamp, 10)
+				}
+			case "mime":
+				value = metadata.MIME
+			}
+			values = append(values, value)
+		}
+		if _, err := fmt.Fprintln(out, strings.Join(values, fieldSep)); err != nil {
+			return fmt.Errorf("writing out: %w", err)
+		}
+		if input != "" {
+			break
+		}
 	}
 	return nil
 }
@@ -220,15 +306,15 @@ func list(dbPath string, out io.Writer, previewWidth uint) error {
 const fieldSep = "\t"
 
 func extractID(input string) (uint64, error) {
-	idStr, _, _ := strings.Cut(input, fieldSep)
+	idStr, _, _ := strings.Cut(strings.TrimSpace(input), fieldSep)
 	if idStr == "" {
 		return 0, fmt.Errorf("input not prefixed with id")
 	}
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("converting id: %w", err)
 	}
-	return uint64(id), nil
+	return id, nil
 }
 
 func decode(dbPath string, in io.Reader, out io.Writer, input string) error {
@@ -287,9 +373,11 @@ func deleteQuery(dbPath string, query string) error {
 
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
-	for k, v := c.First(); k != nil; k, v = c.Next() {
+	for k, v := c.Last(); k != nil; k, v = c.Prev() {
 		if bytes.Contains(v, []byte(query)) {
-			_ = b.Delete(k)
+			if err := deleteEntry(tx, k); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -315,7 +403,11 @@ func deleteLast(dbPath string) error {
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
 	k, _ := c.Last()
-	_ = b.Delete(k)
+	if k != nil {
+		if err := deleteEntry(tx, k); err != nil {
+			return err
+		}
+	}
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
@@ -340,19 +432,32 @@ func delete(dbPath string, in io.Reader) error {
 	}
 	defer tx.Rollback() //nolint:errcheck
 
-	for sc := bufio.NewScanner(bytes.NewReader(input)); sc.Scan(); {
+	sc := bufio.NewScanner(bytes.NewReader(input))
+	for sc.Scan() {
 		id, err := extractID(sc.Text())
 		if err != nil {
 			return fmt.Errorf("extract id: %w", err)
 		}
-		b := tx.Bucket([]byte(bucketKey))
-		if err := b.Delete(itob(id)); err != nil {
-			return fmt.Errorf("delete key: %w", err)
+		if err := deleteEntry(tx, itob(id)); err != nil {
+			return err
 		}
+	}
+	if err := sc.Err(); err != nil {
+		return fmt.Errorf("read ids: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit tx: %w", err)
+	}
+	return nil
+}
+
+func deleteEntry(tx *bolt.Tx, id []byte) error {
+	if err := tx.Bucket([]byte(bucketKey)).Delete(id); err != nil {
+		return fmt.Errorf("delete payload: %w", err)
+	}
+	if err := tx.Bucket([]byte(metadataBucketKey)).Delete(id); err != nil {
+		return fmt.Errorf("delete metadata: %w", err)
 	}
 	return nil
 }
@@ -382,8 +487,10 @@ func wipe(dbPath string) error {
 
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
-	for k, _ := c.First(); k != nil; k, _ = c.Next() {
-		_ = b.Delete(k)
+	for k, _ := c.Last(); k != nil; k, _ = c.Prev() {
+		if err := deleteEntry(tx, k); err != nil {
+			return err
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -392,7 +499,40 @@ func wipe(dbPath string) error {
 	return nil
 }
 
-const bucketKey = "b"
+const (
+	bucketKey         = "b"
+	metadataBucketKey = "metadata"
+)
+
+type entryMetadata struct {
+	Timestamp int64     `json:"timestamp"`
+	MIME      string    `json:"mime"`
+	Image     entryImageMetadata `json:"image"`
+}
+
+type entryImageMetadata struct {
+	Format string `json:"format,omitempty"`
+	Width  int    `json:"width,omitempty"`
+	Height int    `json:"height,omitempty"`
+}
+
+func readMetadata(tx *bolt.Tx, id []byte) (*entryMetadata, error) {
+	data := tx.Bucket([]byte(metadataBucketKey)).Get(id)
+	var metadata entryMetadata
+	if err := json.Unmarshal(data, &metadata); err != nil {
+		return nil, fmt.Errorf("read metadata for id %d: %w", btoi(id), err)
+	}
+	return &metadata, nil
+}
+
+// TODO: delete once pre metadata databases no longer need support
+func compatReadMetadata(tx *bolt.Tx, id, payload []byte) (*entryMetadata, error) {
+	b := tx.Bucket([]byte(metadataBucketKey))
+	if b == nil || b.Get(id) == nil {
+		return &entryMetadata{Image: decodeImageMetadata(payload)}, nil
+	}
+	return readMetadata(tx, id)
+}
 
 func initDB(path string) (*bolt.DB, error)         { return initDBOption(path, false) }
 func initDBReadOnly(path string) (*bolt.DB, error) { return initDBOption(path, true) }
@@ -420,8 +560,12 @@ func initDBOption(path string, ro bool) (*bolt.DB, error) {
 		return db, nil
 	}
 	err = db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte(bucketKey))
-		return err
+		for _, bucket := range []string{bucketKey, metadataBucketKey} {
+			if _, err := tx.CreateBucketIfNotExists([]byte(bucket)); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("init bucket: %w", err)
@@ -466,16 +610,26 @@ func compactDB(path string) error {
 	return nil
 }
 
-func preview(index uint64, data []byte, width uint) string {
-	if config, format, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
-		return fmt.Sprintf("%d%s[[ binary data %s %s %dx%d ]]",
-			index, fieldSep, sizeStr(len(data)), format, config.Width, config.Height)
+func preview(data []byte, metadata *entryMetadata, width uint) string {
+	img := metadata.Image
+	if img.Format != "" {
+		return fmt.Sprintf("[[ binary data %s %s %dx%d ]]",
+			sizeStr(len(data)), img.Format, img.Width, img.Height)
 	}
 	prev := string(data)
 	prev = strings.TrimSpace(prev)
 	prev = strings.Join(strings.Fields(prev), " ")
-	prev = trunc(prev, int(width), "…")
-	return fmt.Sprintf("%d%s%s", index, fieldSep, prev)
+	return trunc(prev, int(width), "…")
+}
+
+func decodeImageMetadata(data []byte) entryImageMetadata {
+	var img entryImageMetadata
+	if config, format, err := image.DecodeConfig(bytes.NewReader(data)); err == nil {
+		img.Format = format
+		img.Width = config.Width
+		img.Height = config.Height
+	}
+	return img
 }
 
 func trunc(in string, max int, ellip string) string {

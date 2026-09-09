@@ -1,17 +1,17 @@
 ! exec cliphist
 ! stdout .
-stderr '^usage:'
-stderr '^options:'
+stderr '^Usage:'
+stderr '^Options:'
 
 ! exec cliphist hello
 ! stdout .
-stderr '^usage:'
-stderr '^options:'
+stderr '^Usage:'
+stderr '^Options:'
 
 ! exec cliphist -unknown
 ! stdout .
-stderr '^usage:'
-stderr '^options:'
+stderr '^Usage:'
+stderr '^Options:'
 
 # should store first
 ! exec cliphist list
