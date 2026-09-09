@@ -13,6 +13,19 @@ stderr '^Options:'
 stderr '^Usage:'
 stderr '^Options:'
 
+# flags must come before the command
+! exec cliphist store -max-items 20
+! stdout .
+stderr '^Usage:'
+
+! exec cliphist store --max-items 20
+! stdout .
+stderr '^Usage:'
+
+! exec cliphist wipe extra
+! stdout .
+stderr '^Usage:'
+
 # should store first
 ! exec cliphist list
 stderr 'please store something first'
@@ -23,7 +36,7 @@ exec cliphist store
 # delete query
 ! exec cliphist delete-query
 ! stdout .
-stderr 'please provide a query'
+stderr '^Usage:'
 
 # decode id check
 ! exec cliphist decode

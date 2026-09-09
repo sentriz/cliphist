@@ -74,13 +74,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if flag.NArg() == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
+	var id, query string
+	var listArgs []string
 
-	switch command, args := flag.Arg(0), flag.Args()[1:]; command {
-	case "store":
+	switch args := flag.Args(); {
+	case match(args, "store"):
 		switch os.Getenv("CLIPBOARD_STATE") { // from man wl-clipboard
 		case "sensitive":
 		case "clear":
@@ -88,26 +86,28 @@ func main() {
 		default:
 			err = store(*dbPath, os.Stdin, *maxDedupeSearch, *maxItems, *minLength, maxStoreSize)
 		}
-	case "list":
-		flag := flag.NewFlagSet(command, flag.ExitOnError)
+	case match(args, "list", &listArgs):
+		flag := flag.NewFlagSet("list", flag.ExitOnError)
 		fields := flag.String("fields", "id,preview", "comma separated fields (id, preview, timestamp, mime) keep id first for decode or delete")
-		flag.Parse(args)
+		flag.Parse(listArgs)
 		if flag.NArg() > 1 {
 			err = errors.New("list accepts at most one id")
 			break
 		}
 		err = list(*dbPath, os.Stdout, *previewWidth, strings.Split(*fields, ","), flag.Arg(0))
-	case "decode":
-		err = decode(*dbPath, os.Stdin, os.Stdout, flag.Arg(1))
-	case "delete-query":
-		err = deleteQuery(*dbPath, flag.Arg(1))
-	case "delete":
+	case match(args, "decode"):
+		err = decode(*dbPath, os.Stdin, os.Stdout, "")
+	case match(args, "decode", &id):
+		err = decode(*dbPath, os.Stdin, os.Stdout, id)
+	case match(args, "delete-query", &query):
+		err = deleteQuery(*dbPath, query)
+	case match(args, "delete"):
 		err = delete(*dbPath, os.Stdin)
-	case "wipe":
+	case match(args, "wipe"):
 		err = wipeAndCompact(*dbPath)
-	case "compact":
+	case match(args, "compact"):
 		err = compactDB(*dbPath)
-	case "version":
+	case match(args, "version"):
 		fmt.Fprintf(flag.CommandLine.Output(), "%s\t%s\n", "version", strings.TrimSpace(version))
 		flag.VisitAll(func(f *flag.Flag) {
 			fmt.Fprintf(flag.CommandLine.Output(), "%s\t%s\n", f.Name, f.Value)
@@ -120,6 +120,26 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func match(args []string, pattern ...any) bool {
+	for i, p := range pattern {
+		switch p := p.(type) {
+		case string:
+			if i >= len(args) || args[i] != p {
+				return false
+			}
+		case *string:
+			if i >= len(args) {
+				return false
+			}
+			*p = args[i]
+		case *[]string:
+			*p = args[i:]
+			return true
+		}
+	}
+	return len(args) == len(pattern)
 }
 
 func store(dbPath string, in io.Reader, maxDedupeSearch, maxItems uint64, minLength uint, maxStoreSize uint64) error {
@@ -355,10 +375,6 @@ func decode(dbPath string, in io.Reader, out io.Writer, input string) error {
 }
 
 func deleteQuery(dbPath string, query string) error {
-	if query == "" {
-		return fmt.Errorf("please provide a query")
-	}
-
 	db, err := initDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
