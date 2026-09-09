@@ -89,7 +89,7 @@ func main() {
 		}
 	case match(args, "list", &listArgs):
 		flag := flag.NewFlagSet("list", flag.ExitOnError)
-		fields := flag.String("fields", "id,preview", "comma separated fields (id, preview, timestamp, mime) keep id first for decode or delete")
+		fields := flag.String("fields", "id,preview", "comma separated fields (id, preview, timestamp, mime, format) keep id first for decode or delete")
 		flag.Parse(listArgs)
 		switch rest := flag.Args(); {
 		case match(rest), match(rest, &id):
@@ -263,7 +263,7 @@ func list(dbPath string, out io.Writer, previewWidth uint, fields []string, inpu
 	}
 	for _, field := range fields {
 		switch field {
-		case "id", "preview", "timestamp", "mime":
+		case "id", "preview", "timestamp", "mime", "format":
 		default:
 			return fmt.Errorf("unknown field %q", field)
 		}
@@ -319,6 +319,8 @@ func list(dbPath string, out io.Writer, previewWidth uint, fields []string, inpu
 				}
 			case "mime":
 				value = metadata.MIME
+			case "format":
+				value = metadata.Image.Format
 			}
 			values = append(values, value)
 		}

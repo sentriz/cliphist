@@ -8,6 +8,10 @@ exec cliphist store
 exec cliphist list
 stdout '\[\[ binary data \d+ B png 20x20 \]\]'
 
+# check we expose the decoded format
+exec cliphist list -fields id,format
+stdout '^1\tpng$'
+
 stdin query
 exec cliphist decode
 cp stdout out.png

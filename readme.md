@@ -41,6 +41,7 @@ Bind it to something nice on your keyboard.
 
 ```shell
 cliphist list -fields id,mime,preview
+cliphist list -fields id,format
 cliphist list -fields id,timestamp
 cliphist list -fields mime 123
 cliphist -db-path /some/db list -fields id,timestamp

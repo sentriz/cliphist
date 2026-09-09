@@ -45,6 +45,8 @@ exec cliphist list -fields mime 2
 stdout '^text/plain; charset=utf-8$'
 exec cliphist list -fields mime 1
 cmp stdout empty-field
+exec cliphist list -fields format 2
+cmp stdout empty-field
 exec cliphist list -fields id,preview 2
 stdout '^2\thello world$'
 exec cliphist list -fields preview,preview 1
