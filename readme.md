@@ -91,6 +91,13 @@ Or else query manually:
 </details>
 
 <details>
+<summary>cmenu</summary>
+
+[cmenu](https://github.com/sentriz/cmenu) runs the script itself, so instead of a pipe you give it a script that prints the list, and gets the selected line back. See [menu-clipboard](https://github.com/sentriz/dotfiles/blob/508a0c36/laptop/.local/bin/laptop/menus/menu-clipboard) for an example.
+
+</details>
+
+<details>
 <summary>rofi (custom mode)</summary>
 
 `rofi -modi clipboard:/path/to/cliphist-rofi -show clipboard`
