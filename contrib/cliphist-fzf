@@ -3,8 +3,9 @@
 
 case "$1" in
 	preview)
+		id=$(echo "$2" | cut -f1)
 		# show preview if non-binary data
-		echo "$2" | grep -q '[\[ binary data .* \]\]' || echo "$2" | cliphist decode
+		[ -n "$(cliphist list -fields format "$id")" ] || cliphist decode "$id"
 		;;
 	*)
 		exec cliphist list |

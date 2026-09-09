@@ -4,22 +4,20 @@ set -u
 case "${1-}" in
 preview)
     row="$2"
-    id="${row%%$'\t'*}"
+    IFS=$'\t' read -r id _ <<<"$row"
     mime_type="$(cliphist list -fields mime "$id")" || exit
-    if [[ "$mime_type" == image/* ]] || { [[ -z "$mime_type" ]] && printf '%s\n' "$row" | grep -qP '^\d+\t\[\[ binary data .* \]\]'; }; then
-        cliphist decode "$id" | chafa -f sixel -s "${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}"
-    elif [[ -z "$mime_type" || "$mime_type" == text/* ]]; then
-        cliphist decode "$id"
-    else
-        printf '%s\n' "$row"
-    fi
+    case "$mime_type" in
+    image/*) cliphist decode "$id" | chafa -f sixel -s "${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}" ;;
+    text/*) cliphist decode "$id" ;;
+    *) printf '%s\n' "$row" ;;
+    esac
     ;;
 
 *)
     row="$(cliphist list | fzf --preview "$(realpath "$0") preview {}")" || exit
     test -z "$row" && exit
 
-    id="${row%%$'\t'*}"
+    IFS=$'\t' read -r id _ <<<"$row"
     mime_type="$(cliphist list -fields mime "$id")" || exit
     copy_args=()
     if [[ -n "$mime_type" ]]; then

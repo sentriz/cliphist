@@ -97,7 +97,7 @@ The duration is a [Go duration](https://pkg.go.dev/time#ParseDuration), so days 
 
 `./cliphist-fzf-sixel`
 
-Requires [contrib/cliphist-fzf-sixel](./contrib/cliphist-fzf-sixel), chafa, and a sixel-capable terminal. Uses MIME metadata for image previews and restoration, with preview-text detection as a fallback for entries without a known type.
+Requires [contrib/cliphist-fzf-sixel](./contrib/cliphist-fzf-sixel), chafa, and a sixel-capable terminal. Uses MIME metadata for image previews and restoration.
 
 </details>
 
