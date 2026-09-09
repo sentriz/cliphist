@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.8.0](https://www.github.com/sentriz/cliphist/compare/v0.7.0...v0.8.0) (2026-09-09)
+
+
+### Features
+
+* add compact command ([#174](https://www.github.com/sentriz/cliphist/issues/174)) ([cee6dca](https://www.github.com/sentriz/cliphist/commit/cee6dca8ef4e03ef5dfcf7e2d13ca688ae2116c6))
+* add configurable max clipboard size with max-store-size ([a17fb70](https://www.github.com/sentriz/cliphist/commit/a17fb70fdc5a46917c6125ff49c7624491d6bf82)), closes [#166](https://www.github.com/sentriz/cliphist/issues/166) [#168](https://www.github.com/sentriz/cliphist/issues/168)
+* add entry metadata and configurable list fields ([673311f](https://www.github.com/sentriz/cliphist/commit/673311ff32bb1eefdb455371316869fb71143fff)), closes [#167](https://www.github.com/sentriz/cliphist/issues/167) [#183](https://www.github.com/sentriz/cliphist/issues/183) [#184](https://www.github.com/sentriz/cliphist/issues/184)
+* add format list field ([222382e](https://www.github.com/sentriz/cliphist/commit/222382e9111fdcf5f0dbb36da57b5d5828a15e8c))
+* add support for webp images ([bae528e](https://www.github.com/sentriz/cliphist/commit/bae528ea9fbd9a2b51a71ff2ea0e5ac323ebc542)), closes [#171](https://www.github.com/sentriz/cliphist/issues/171)
+* add wipe -older-than ([31d536e](https://www.github.com/sentriz/cliphist/commit/31d536e9145a3506beb0604851119b1ed8b41d98)), closes [#100](https://www.github.com/sentriz/cliphist/issues/100)
+* error on unexpected command arguments ([4e677b4](https://www.github.com/sentriz/cliphist/commit/4e677b41b0d03abe8676b557e6d8fa83b5f7190c)), closes [#99](https://www.github.com/sentriz/cliphist/issues/99)
+
+
+### Bug Fixes
+
+* create db with 0600 permissions ([25cc3e4](https://www.github.com/sentriz/cliphist/commit/25cc3e4affb6d24398cbcb2f42d8e8cf9cf62823)), closes [#182](https://www.github.com/sentriz/cliphist/issues/182)
+
 ## [0.7.0](https://www.github.com/sentriz/cliphist/compare/v0.6.1...v0.7.0) (2025-10-11)
 
 A small release, mostly featuring the `min-store-length` option.
