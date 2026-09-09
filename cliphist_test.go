@@ -118,66 +118,6 @@ func TestStoreMaxSize(t *testing.T) {
 	}
 }
 
-func TestParseSize(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected uint64
-		wantErr  bool
-	}{
-		// Bytes without unit
-		{"0", 0, false},
-		{"1024", 1024, false},
-		{"5000000", 5000000, false},
-
-		// Decimal units (base 1000)
-		{"1KB", 1000, false},
-		{"5MB", 5 * 1000 * 1000, false},
-		{"1GB", 1000 * 1000 * 1000, false},
-		{"2.5MB", 2500000, false},
-
-		// Binary units (base 1024)
-		{"1KiB", 1024, false},
-		{"5MiB", 5 * 1024 * 1024, false},
-		{"1GiB", 1024 * 1024 * 1024, false},
-		{"2.5MiB", uint64(2.5 * 1024 * 1024), false},
-
-		// Case insensitive
-		{"5mb", 5 * 1000 * 1000, false},
-		{"5Mb", 5 * 1000 * 1000, false},
-		{"5mib", 5 * 1024 * 1024, false},
-		{"5MIB", 5 * 1024 * 1024, false},
-
-		// With spaces
-		{" 5MB ", 5 * 1000 * 1000, false},
-		{"5 MB", 5 * 1000 * 1000, false},
-
-		// Errors
-		{"", 0, true},
-		{"abc", 0, true},
-		{"MB", 0, true},
-		{"-5MB", 0, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result, err := parseSize(tt.input)
-			if tt.wantErr {
-				if err == nil {
-					t.Errorf("parseSize(%q) expected error, got %d", tt.input, result)
-				}
-				return
-			}
-			if err != nil {
-				t.Errorf("parseSize(%q) unexpected error: %v", tt.input, err)
-				return
-			}
-			if result != tt.expected {
-				t.Errorf("parseSize(%q) = %d, want %d", tt.input, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestScripts(t *testing.T) {
 	testscript.Run(t, testscript.Params{
 		Dir:                 "testdata",

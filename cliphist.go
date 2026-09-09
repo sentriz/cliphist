@@ -60,19 +60,14 @@ func main() {
 	maxDedupeSearch := flag.Uint64("max-dedupe-search", 100, "maximum number of last items to look through when finding duplicates")
 	minLength := flag.Uint("min-store-length", 0, "minimum number of characters to store")
 	previewWidth := flag.Uint("preview-width", 100, "maximum number of characters to preview")
-	maxStoreSizeStr := flag.String("max-store-size", "5MB", "maximum size of clipboard to store (e.g., 5MB, 10MiB, 1GB)")
+	maxStoreSize := uint64(5 * 1000 * 1000)
+	flag.Var(sizeParser{&maxStoreSize}, "max-store-size", "maximum size of clipboard to store (e.g., 5MB, 10MiB, 1GB)")
 	dbPath := flag.String("db-path", filepath.Join(cacheHome, "cliphist", "db"), "path to db")
 	configPath := flag.String("config-path", filepath.Join(configHome, "cliphist", "config"), "overwrite config path to use instead of cli flags")
 
 	flag.Parse()
 	flagconf.ParseEnv()
 	flagconf.ParseConfig(*configPath)
-
-	maxStoreSize, err := parseSize(*maxStoreSizeStr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "invalid max-store-size value: %v\n", err)
-		os.Exit(1)
-	}
 
 	var id, query string
 	var listArgs []string
@@ -689,48 +684,52 @@ func sizeStr(size int) string {
 	return fmt.Sprintf("%.0f %s", fsize, units[i])
 }
 
-// parseSize parses a size string like "5MB", "10MiB", "1024" into bytes
-func parseSize(s string) (uint64, error) {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return 0, fmt.Errorf("empty size string")
+type sizeParser struct{ *uint64 }
+
+func (s sizeParser) Set(value string) error {
+	value = strings.TrimSpace(value)
+	for _, unit := range sizeUnits {
+		before, found := strings.CutSuffix(strings.ToLower(value), strings.ToLower(unit.suffix))
+		if !found {
+			continue
+		}
+		num, err := strconv.ParseFloat(strings.TrimSpace(before), 64)
+		if err != nil || num < 0 {
+			return errors.New("number must be positive")
+		}
+		*s.uint64 = uint64(num * float64(unit.multiplier))
+		return nil
 	}
-
-	// Ordered from longest to shortest suffix to avoid partial matches
-	units := []struct {
-		suffix     string
-		multiplier uint64
-	}{
-		{"gib", 1024 * 1024 * 1024},
-		{"mib", 1024 * 1024},
-		{"kib", 1024},
-		{"gb", 1000 * 1000 * 1000},
-		{"mb", 1000 * 1000},
-		{"kb", 1000},
-		{"b", 1},
+	num, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		return errors.New("must be a number of bytes, or suffixed with a size unit (B, KB, KiB, MB, MiB, GB, GiB)")
 	}
+	*s.uint64 = num
+	return nil
+}
 
-	lower := strings.ToLower(s)
-
-	for _, unit := range units {
-		if strings.HasSuffix(lower, unit.suffix) {
-			numStr := s[:len(s)-len(unit.suffix)]
-			numStr = strings.TrimSpace(numStr)
-			num, err := strconv.ParseFloat(numStr, 64)
-			if err != nil {
-				return 0, fmt.Errorf("invalid number: %w", err)
-			}
-			if num < 0 {
-				return 0, fmt.Errorf("size cannot be negative")
-			}
-			return uint64(num * float64(unit.multiplier)), nil
+func (s sizeParser) String() string {
+	if s.uint64 == nil {
+		return ""
+	}
+	for _, unit := range sizeUnits {
+		if *s.uint64 >= unit.multiplier && *s.uint64%unit.multiplier == 0 {
+			return strconv.FormatUint(*s.uint64/unit.multiplier, 10) + unit.suffix
 		}
 	}
+	return strconv.FormatUint(*s.uint64, 10)
+}
 
-	// No unit suffix, treat as bytes
-	num, err := strconv.ParseUint(s, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid size: %w", err)
-	}
-	return num, nil
+// ordered from longest to shortest suffix to avoid partial matches
+var sizeUnits = []struct {
+	suffix     string
+	multiplier uint64
+}{
+	{"GiB", 1024 * 1024 * 1024},
+	{"MiB", 1024 * 1024},
+	{"KiB", 1024},
+	{"GB", 1000 * 1000 * 1000},
+	{"MB", 1000 * 1000},
+	{"KB", 1000},
+	{"B", 1},
 }
