@@ -39,6 +39,7 @@ func main() {
 		fmt.Fprintf(flag.CommandLine.Output(), "Usage:\n")
 		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s <store|list|decode|delete|delete-query|wipe|compact|version>\n", flag.CommandLine.Name())
 		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s [options] list [-fields <fields>] [id]\n", flag.CommandLine.Name())
+		fmt.Fprintf(flag.CommandLine.Output(), "  $ %s [options] wipe [-older-than <duration>]\n", flag.CommandLine.Name())
 		fmt.Fprintf(flag.CommandLine.Output(), "\nOptions:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(flag.CommandLine.Output(), "\nSee also:\n")
@@ -69,8 +70,13 @@ func main() {
 	flagconf.ParseEnv()
 	flagconf.ParseConfig(*configPath)
 
+	usage := func() {
+		flag.Usage()
+		os.Exit(1)
+	}
+
 	var id, query string
-	var listArgs []string
+	var listArgs, wipeArgs []string
 
 	switch args := flag.Args(); {
 	case match(args, "store"):
@@ -85,11 +91,12 @@ func main() {
 		flag := flag.NewFlagSet("list", flag.ExitOnError)
 		fields := flag.String("fields", "id,preview", "comma separated fields (id, preview, timestamp, mime) keep id first for decode or delete")
 		flag.Parse(listArgs)
-		if flag.NArg() > 1 {
-			err = errors.New("list accepts at most one id")
-			break
+		switch rest := flag.Args(); {
+		case match(rest), match(rest, &id):
+			err = list(*dbPath, os.Stdout, *previewWidth, strings.Split(*fields, ","), id)
+		default:
+			usage()
 		}
-		err = list(*dbPath, os.Stdout, *previewWidth, strings.Split(*fields, ","), flag.Arg(0))
 	case match(args, "decode"):
 		err = decode(*dbPath, os.Stdin, os.Stdout, "")
 	case match(args, "decode", &id):
@@ -98,8 +105,16 @@ func main() {
 		err = deleteQuery(*dbPath, query)
 	case match(args, "delete"):
 		err = delete(*dbPath, os.Stdin)
-	case match(args, "wipe"):
-		err = wipeAndCompact(*dbPath)
+	case match(args, "wipe", &wipeArgs):
+		flag := flag.NewFlagSet("wipe", flag.ExitOnError)
+		olderThan := flag.Duration("older-than", 0, "only wipe entries older than this duration (eg. 1h, 720h)")
+		flag.Parse(wipeArgs)
+		switch rest := flag.Args(); {
+		case match(rest):
+			err = wipeAndCompact(*dbPath, *olderThan)
+		default:
+			usage()
+		}
 	case match(args, "compact"):
 		err = compactDB(*dbPath)
 	case match(args, "version"):
@@ -108,8 +123,7 @@ func main() {
 			fmt.Fprintf(flag.CommandLine.Output(), "%s\t%s\n", f.Name, f.Value)
 		})
 	default:
-		flag.Usage()
-		os.Exit(1)
+		usage()
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -473,8 +487,8 @@ func deleteEntry(tx *bolt.Tx, id []byte) error {
 	return nil
 }
 
-func wipeAndCompact(dbPath string) error {
-	if err := wipe(dbPath); err != nil {
+func wipeAndCompact(dbPath string, olderThan time.Duration) error {
+	if err := wipe(dbPath, olderThan); err != nil {
 		return fmt.Errorf("wipe: %w", err)
 	}
 	if err := compactDB(dbPath); err != nil {
@@ -483,7 +497,7 @@ func wipeAndCompact(dbPath string) error {
 	return nil
 }
 
-func wipe(dbPath string) error {
+func wipe(dbPath string, olderThan time.Duration) error {
 	db, err := initDB(dbPath)
 	if err != nil {
 		return fmt.Errorf("opening db: %w", err)
@@ -496,9 +510,22 @@ func wipe(dbPath string) error {
 	}
 	defer tx.Rollback() //nolint:errcheck
 
+	cutoff := time.Now().Add(-olderThan).Unix()
+
+	mb := tx.Bucket([]byte(metadataBucketKey))
 	b := tx.Bucket([]byte(bucketKey))
 	c := b.Cursor()
 	for k, _ := c.Last(); k != nil; k, _ = c.Prev() {
+		// entries without a timestamp predate metadata, so they're older than any cutoff
+		if olderThan > 0 && mb != nil && mb.Get(k) != nil {
+			metadata, err := readMetadata(tx, k)
+			if err != nil {
+				return err
+			}
+			if metadata.Timestamp >= cutoff {
+				continue
+			}
+		}
 		if err := deleteEntry(tx, k); err != nil {
 			return err
 		}
@@ -516,8 +543,8 @@ const (
 )
 
 type entryMetadata struct {
-	Timestamp int64     `json:"timestamp"`
-	MIME      string    `json:"mime"`
+	Timestamp int64              `json:"timestamp"`
+	MIME      string             `json:"mime"`
 	Image     entryImageMetadata `json:"image"`
 }
 

@@ -12,7 +12,7 @@ stderr 'unknown field ""'
 ! exec cliphist list -unknown
 stderr 'flag provided but not defined'
 ! exec cliphist list 1 2
-stderr 'list accepts at most one id'
+stderr '^Usage:'
 ! exec cliphist list invalid
 stderr 'converting id'
 ! exec cliphist list -- -1

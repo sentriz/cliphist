@@ -55,19 +55,19 @@ cliphist list -h
 Or else query manually:
 `$ cliphist delete-query "secret item"`.
 
-#### Expire old entries
-
-Run this from an external timer to delete entries older than 30 days:
-
-```shell
-cliphist list -fields id,timestamp | awk -F '\t' -v now="$(date +%s)" '$2 != "" && $2 < now - 30*24*60*60 { print $1 }' | cliphist delete
-```
-
-Entries with unknown timestamps are left untouched.
-
 #### Clear database
 
 `$ cliphist wipe`.
+
+#### Expire old entries
+
+Run this from a timer to delete entries older than 30 days:
+
+```shell
+cliphist wipe -older-than 720h
+```
+
+The duration is a [Go duration](https://pkg.go.dev/time#ParseDuration), so days must be given in hours. Entries stored before cliphist tracked timestamps count as older than any cutoff.
 
 #### Compact database
 

@@ -10,6 +10,13 @@ exec rand 16
 stdin stdout
 exec cliphist store
 
+# recent entries are kept
+exec cliphist wipe -older-than 24h
+! stdout .
+
+exec cliphist list -fields id
+stdout '^3\n2\n1\n$'
+
 exec cliphist wipe
 ! stdout .
 
