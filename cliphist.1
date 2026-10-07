@@ -1,0 +1,324 @@
+.TH CLIPHIST 1 "2026-10-07" "cliphist 0.7.0" "User Commands"
+.SH NAME
+cliphist \- clipboard history manager for Wayland
+.SH SYNOPSIS
+.B cliphist
+[\fIoptions\fR]
+.I command
+[\fIargs\fR]
+.SH DESCRIPTION
+.B cliphist
+records clipboard changes to a persistent database and allows recalling
+them later.
+Both text and binary data (including images) are supported.
+Clipboard entries are preserved byte-for-byte, including leading and
+trailing whitespace.
+.PP
+.B cliphist
+has no built-in picker UI.
+Instead it emits tab-separated output intended to be piped through an
+external menu program such as
+.BR dmenu (1),
+.BR rofi (1),
+.BR fzf (1),
+or
+.BR fuzzel (1).
+.SH COMMANDS
+.TP
+.B store
+Read stdin and append it to the history database.
+Intended to be driven by
+.BR wl-paste (1)
+in watch mode.
+If the environment variable
+.B CLIPBOARD_STATE
+is set to
+.I sensitive
+the entry is silently dropped; if set to
+.I clear
+the most recently stored entry is removed.
+.TP
+.BI "list " "[\-fields \fIfields\fR] [\fIid\fR]"
+Print clipboard history to stdout as TSV, newest first.
+Each line contains the columns requested by
+.BR \-fields .
+The default output is
+.IR id \t preview .
+If a numeric
+.I id
+is supplied, only that entry is printed.
+.RS
+.TP
+.BI \-fields " fields"
+Comma-separated list of columns to include.
+Valid column names are
+.BR id ,
+.BR preview ,
+.BR timestamp ,
+.BR mime ,
+and
+.BR format .
+Keep
+.B id
+first if the output will be piped into
+.B decode
+or
+.BR delete .
+Default:
+.IR id,preview .
+.RE
+.TP
+.BI "decode " "[id]"
+Write the raw bytes of a clipboard entry to stdout.
+Reads a
+.BI id \t...
+line from stdin unless a numeric
+.I id
+is provided directly.
+Use this to restore an entry to the clipboard via
+.BR wl-copy (1).
+.TP
+.B delete
+Delete one or more entries.
+Reads
+.BI id \t...
+lines from stdin (as produced by
+.BR list ).
+.TP
+.BI "delete\-query " query
+Delete all entries whose raw content contains
+.IR query .
+.TP
+.BI "wipe " "[\-older\-than \fIduration\fR]"
+Delete all entries (and compact the database afterwards).
+.RS
+.TP
+.BI \-older\-than " duration"
+Only delete entries older than
+.IR duration .
+The value is a Go duration string; because Go does not define a day unit,
+days must be expressed in hours (e.g.\&
+.I 720h
+for 30 days).
+Entries that predate timestamp tracking are treated as infinitely old and
+are always removed when this flag is used.
+.RE
+.TP
+.B compact
+Compact the database file in place, reclaiming space freed by deletions.
+.TP
+.B version
+Print the cliphist version and current option values, then exit.
+.SH OPTIONS
+Global options may be placed before the command name.
+Each option may also be set via an environment variable or a line in the
+config file (see
+.B CONFIGURATION
+below).
+.TP
+.BI \-db\-path " path"
+Path to the database file.
+Default:
+.IR $XDG_CACHE_HOME/cliphist/db .
+.TP
+.BI \-config\-path " path"
+Path to the configuration file.
+Default:
+.IR $XDG_CONFIG_HOME/cliphist/config .
+This option cannot be set via the config file itself.
+.TP
+.BI \-max\-items " n"
+Maximum number of entries to retain.
+Oldest entries are removed when the limit is exceeded.
+Default:
+.IR 750 .
+.TP
+.BI \-max\-dedupe\-search " n"
+Number of recent entries to scan when checking for duplicates before
+storing a new entry.
+Default:
+.IR 100 .
+.TP
+.BI \-max\-store\-size " size"
+Maximum size of a clipboard item to store.
+Accepts a number of bytes or a suffixed value such as
+.IR 5MB ,
+.IR 10MiB ,
+or
+.IR 1GB .
+Default:
+.IR 5MB .
+.TP
+.BI \-min\-store\-length " n"
+Minimum number of grapheme clusters a text entry must contain to be stored.
+Default:
+.I 0
+(no minimum).
+.TP
+.BI \-preview\-width " n"
+Maximum number of characters shown in the
+.I preview
+field of
+.BR list .
+Default:
+.IR 100 .
+.SH CONFIGURATION
+Options can be read from a plain-text config file.
+The default location is
+.IR $XDG_CONFIG_HOME/cliphist/config ;
+override with
+.B \-config\-path
+or
+.BR CLIPHIST_CONFIG_PATH .
+.PP
+Each non-empty, non-comment line has the form:
+.PP
+.RS
+.I key value
+.RE
+.PP
+Lines beginning with
+.B #
+are comments.
+Example:
+.PP
+.RS
+.nf
+# keep two years of history
+max\-items 1000
+max\-dedupe\-search 200
+.fi
+.RE
+.PP
+CLI flags take precedence over environment variables, which take precedence
+over config file values.
+.SH ENVIRONMENT
+.TP
+.B CLIPHIST_DB_PATH
+Equivalent to
+.BR \-db\-path .
+.TP
+.B CLIPHIST_CONFIG_PATH
+Equivalent to
+.BR \-config\-path .
+.TP
+.B CLIPHIST_MAX_ITEMS
+Equivalent to
+.BR \-max\-items .
+.TP
+.B CLIPHIST_MAX_DEDEUPE_SEARCH
+Equivalent to
+.BR \-max\-dedupe\-search .
+.TP
+.B CLIPHIST_MAX_STORE_SIZE
+Equivalent to
+.BR \-max\-store\-size .
+.TP
+.B CLIPHIST_MIN_STORE_LENGTH
+Equivalent to
+.BR \-min\-store\-length .
+.TP
+.B CLIPHIST_PREVIEW_WIDTH
+Equivalent to
+.BR \-preview\-width .
+.TP
+.B CLIPBOARD_STATE
+Set by
+.BR wl-paste (1)
+in watch mode.
+When set to
+.I sensitive
+the incoming clipboard data is discarded without storing.
+When set to
+.I clear
+the most recently stored entry is deleted.
+.TP
+.B CLIPBOARD_TYPE
+Set by
+.BR wl-paste (1)
+in watch mode (requires wl-clipboard > 2.3.0).
+Used to record the MIME type of a stored entry.
+.SH FILES
+.TP
+.I $XDG_CACHE_HOME/cliphist/db
+Default database location (bbolt key-value store).
+.TP
+.I $XDG_CONFIG_HOME/cliphist/config
+Default configuration file.
+.SH EXAMPLES
+.SS Listen for clipboard changes
+Start once per session (e.g. from your compositor config):
+.PP
+.RS
+.nf
+wl\-paste \-\-watch cliphist store
+.fi
+.RE
+.PP
+To capture both text and images explicitly:
+.PP
+.RS
+.nf
+wl\-paste \-\-type text  \-\-watch cliphist store
+wl\-paste \-\-type image \-\-watch cliphist store
+.fi
+.RE
+.SS Restore an entry to the clipboard
+.RS
+.nf
+cliphist list | dmenu | cliphist decode | wl\-copy
+cliphist list | fzf \-\-no\-sort | cliphist decode | wl\-copy
+cliphist list | rofi \-dmenu | cliphist decode | wl\-copy
+cliphist list | fuzzel \-\-dmenu | cliphist decode | wl\-copy
+cliphist list | wofi \-S dmenu | cliphist decode | wl\-copy
+.fi
+.RE
+.SS Hide the ID column from the picker
+.RS
+.nf
+# fzf
+cliphist list | fzf \-d $'\\t' \-\-with\-nth 2 | cliphist decode | wl\-copy
+# rofi
+cliphist list | rofi \-dmenu \-display\-columns 2 | cliphist decode | wl\-copy
+# fuzzel
+cliphist list | fuzzel \-\-dmenu \-\-with\-nth 2 | cliphist decode | wl\-copy
+.fi
+.RE
+.SS Delete an entry
+.RS
+.nf
+cliphist list | dmenu | cliphist delete
+cliphist delete\-query "secret text"
+.fi
+.RE
+.SS Inspect entry metadata
+.RS
+.nf
+cliphist list \-fields id,mime,preview
+cliphist list \-fields id,timestamp
+cliphist list \-fields mime,format 123
+.fi
+.RE
+.SS Expire old entries (run from a timer)
+.RS
+.nf
+cliphist wipe \-older\-than 720h
+.fi
+.RE
+.SS Use a non-default database path
+.RS
+.nf
+cliphist \-db\-path /tmp/clipboard.db list
+.fi
+.RE
+.SH SEE ALSO
+.BR wl\-paste (1),
+.BR wl\-copy (1),
+.BR dmenu (1),
+.BR rofi (1),
+.BR fzf (1),
+.BR fuzzel (1),
+.BR wofi (1)
+.SH AUTHORS
+Senan Kelly and contributors.
+Source and issue tracker: <https://github.com/sentriz/cliphist>
